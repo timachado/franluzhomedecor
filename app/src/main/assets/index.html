@@ -9,12 +9,13 @@
 <link rel="stylesheet" href="magazines.css">
 <link rel="stylesheet" href="magazines-v14.css">
 <link rel="stylesheet" href="magazines-v15.css">
+<link rel="stylesheet" href="v16.css">
 </head>
 <body>
 <div class="shell">
 <header class="topbar">
  <div class="brand" data-route="home"><div class="brandmark">✝</div><strong>Bíblia EBD</strong></div>
- <div class="top-actions"><button class="iconbtn" id="bell">🔔</button><button class="iconbtn" id="sun">☀️</button><button class="iconbtn" id="menu">☰</button></div>
+ <div class="top-actions"><button class="iconbtn" id="bell">🔔</button><button class="iconbtn" id="globalSearchBtn">🔎</button><button class="iconbtn" id="sun">☀️</button><button class="iconbtn" id="menu">☰</button></div>
 </header>
 <main class="content" id="app"></main>
 <nav class="bottomnav">
@@ -27,11 +28,14 @@
 <div class="toast" id="toast"></div>
 <div class="menu-sheet" id="menuSheet"><div class="menu-card"><div class="menu-title"><strong>Menu Bíblia EBD</strong><button class="iconbtn" id="closeMenu">✕</button></div><div class="menu-grid">
 <button class="menu-item" data-route="ebd"><span>🎓</span><strong>Escola Bíblica</strong><small>Lições e revistas</small></button>
+<button class="menu-item" data-route="library"><span>📚</span><strong>Minha Biblioteca</strong><small>Revistas e progresso</small></button>
+<button class="menu-item" data-route="search"><span>🔎</span><strong>Busca Global</strong><small>Pesquise em todo o app</small></button>
 <button class="menu-item" data-route="outlines"><span>🗂️</span><strong>Esboços</strong><small>Crie roteiros de estudo</small></button>
 <button class="menu-item" data-route="dictionary"><span>📚</span><strong>Dicionário</strong><small>Termos bíblicos</small></button>
 <button class="menu-item" data-route="concordance"><span>🔎</span><strong>Concordância</strong><small>Busque palavras</small></button>
 <button class="menu-item" data-route="harpa"><span>🎵</span><strong>Harpa</strong><small>Lista de hinos</small></button>
 <button class="menu-item" data-route="tools"><span>🛠️</span><strong>Ferramentas</strong><small>Planos e recursos</small></button>
+<button class="menu-item" data-route="sync"><span>☁️</span><strong>Backup</strong><small>Proteja seus dados</small></button>
 </div></div></div>
 <script src="app1.js"></script>
 <script src="app2.js"></script>
@@ -39,4 +43,5 @@
 <script src="app4.js"></script>
 <script src="app5.js"></script>
 <script src="app6.js"></script>
+<script src="app7.js"></script>
 </body></html>
