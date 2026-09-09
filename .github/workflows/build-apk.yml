@@ -11,6 +11,19 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+      - name: Rebuild and verify official FranLuz icon
+        run: |
+          mkdir -p app/src/main/res/drawable-nodpi
+          cat app/icon_parts/part1.b64 app/icon_parts/part2.b64 app/icon_parts/part3.b64 app/icon_parts/part4.b64 | tr -d '\r\n' | base64 -d > app/src/main/res/drawable-nodpi/franluz_app_icon.png
+          file app/src/main/res/drawable-nodpi/franluz_app_icon.png
+          echo 'c475e22792192438093b2b303b996d909ec14891fa2a8210471d780ef6b0f28e  app/src/main/res/drawable-nodpi/franluz_app_icon.png' | sha256sum -c -
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('app/src/main/res/drawable-nodpi/franluz_app_icon.png').read_bytes()
+          assert p[:8] == b'\x89PNG\r\n\x1a\n', 'Launcher icon is not a PNG'
+          assert len(p) == 9890, f'Unexpected icon size: {len(p)}'
+          print('Official FranLuz PNG verified:', len(p), 'bytes')
+          PY
       - name: Probe FranLuz InfinityFree HTTPS
         run: |
           echo '=== CERTIFICATE ==='
@@ -29,13 +42,27 @@ jobs:
           gradle-version: '8.13'
       - name: Build APK
         run: gradle --no-daemon clean assembleDebug
-      - name: Verify and rename
+      - name: Verify APK and packaged icon
         run: |
           $ANDROID_HOME/build-tools/36.0.0/apksigner verify --verbose --print-certs app/build/outputs/apk/debug/app-debug.apk
-          $ANDROID_HOME/build-tools/36.0.0/aapt dump badging app/build/outputs/apk/debug/app-debug.apk | head -n 3
-          cp app/build/outputs/apk/debug/app-debug.apk FranLuz_Home_Decor_2.8.8_Icone_Oficial.apk
+          $ANDROID_HOME/build-tools/36.0.0/aapt dump badging app/build/outputs/apk/debug/app-debug.apk | head -n 5
+          mkdir -p /tmp/apkcheck
+          cd /tmp/apkcheck
+          unzip -q "$GITHUB_WORKSPACE/app/build/outputs/apk/debug/app-debug.apk"
+          ICON_PATH=$(find . -type f -name 'franluz_app_icon.png' | head -n 1)
+          test -n "$ICON_PATH"
+          file "$ICON_PATH"
+          python3 - "$ICON_PATH" <<'PY'
+          import sys
+          from pathlib import Path
+          p = Path(sys.argv[1]).read_bytes()
+          assert p[:8] == b'\x89PNG\r\n\x1a\n', 'Packaged launcher icon is not PNG'
+          print('Packaged FranLuz icon verified:', len(p), 'bytes')
+          PY
+          cd "$GITHUB_WORKSPACE"
+          cp app/build/outputs/apk/debug/app-debug.apk FranLuz_Home_Decor_2.8.9_Icone_Oficial.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: FranLuz-Android-2.8.8-Icone-Oficial-APK
-          path: FranLuz_Home_Decor_2.8.8_Icone_Oficial.apk
+          name: FranLuz-Android-2.8.9-Icone-Oficial-APK
+          path: FranLuz_Home_Decor_2.8.9_Icone_Oficial.apk
           retention-days: 30
