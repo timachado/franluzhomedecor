@@ -31,19 +31,16 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
 
         root = new FrameLayout(this);
-        root.setBackgroundColor(Color.rgb(250, 248, 243));
+        root.setBackgroundColor(Color.rgb(7, 9, 22));
 
         webView = new WebView(this);
-        webView.setBackgroundColor(Color.rgb(250, 248, 243));
+        webView.setBackgroundColor(Color.rgb(7, 9, 22));
         root.addView(webView, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
         ));
         setContentView(root);
 
-        // Android 15/16 trabalha em edge-to-edge. Aplicamos os insets no CONTÊINER,
-        // reduzindo de verdade a área útil do WebView e impedindo que a navegação
-        // do app fique atrás das barras do Android.
         root.setOnApplyWindowInsetsListener((view, insets) -> {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 android.graphics.Insets bars = insets.getInsets(
@@ -51,14 +48,10 @@ public class MainActivity extends Activity {
                 );
                 view.setPadding(bars.left, bars.top, bars.right, bars.bottom);
             } else {
-                @SuppressWarnings("deprecation")
-                int left = insets.getSystemWindowInsetLeft();
-                @SuppressWarnings("deprecation")
-                int top = insets.getSystemWindowInsetTop();
-                @SuppressWarnings("deprecation")
-                int right = insets.getSystemWindowInsetRight();
-                @SuppressWarnings("deprecation")
-                int bottom = insets.getSystemWindowInsetBottom();
+                @SuppressWarnings("deprecation") int left = insets.getSystemWindowInsetLeft();
+                @SuppressWarnings("deprecation") int top = insets.getSystemWindowInsetTop();
+                @SuppressWarnings("deprecation") int right = insets.getSystemWindowInsetRight();
+                @SuppressWarnings("deprecation") int bottom = insets.getSystemWindowInsetBottom();
                 view.setPadding(left, top, right, bottom);
             }
             return insets;
@@ -93,22 +86,13 @@ public class MainActivity extends Activity {
             }
         });
 
-        if (savedInstanceState == null) {
-            loadBundledApp();
-        } else {
-            webView.restoreState(savedInstanceState);
-        }
+        if (savedInstanceState == null) loadBundledApp(); else webView.restoreState(savedInstanceState);
     }
 
     private boolean handleUri(Uri uri) {
         String host = uri.getHost();
-        if ("app.local".equalsIgnoreCase(host) || "about".equalsIgnoreCase(uri.getScheme())) {
-            return false;
-        }
-        try {
-            startActivity(new Intent(Intent.ACTION_VIEW, uri));
-        } catch (Exception ignored) {
-        }
+        if ("app.local".equalsIgnoreCase(host) || "about".equalsIgnoreCase(uri.getScheme())) return false;
+        try { startActivity(new Intent(Intent.ACTION_VIEW, uri)); } catch (Exception ignored) {}
         return true;
     }
 
@@ -120,41 +104,19 @@ public class MainActivity extends Activity {
             String line;
             while ((line = reader.readLine()) != null) b64.append(line);
             reader.close();
-
             byte[] compressed = Base64.decode(b64.toString(), Base64.DEFAULT);
             GZIPInputStream gzip = new GZIPInputStream(new ByteArrayInputStream(compressed));
             BufferedReader htmlReader = new BufferedReader(new InputStreamReader(gzip, StandardCharsets.UTF_8));
             StringBuilder html = new StringBuilder();
             while ((line = htmlReader.readLine()) != null) html.append(line).append('\n');
             htmlReader.close();
-
             webView.loadDataWithBaseURL("https://app.local/", html.toString(), "text/html", "UTF-8", null);
         } catch (Exception e) {
             webView.loadData("<h2>Bíblia EBD</h2><p>Não foi possível carregar a interface.</p>", "text/html", "UTF-8");
         }
     }
 
-    @Override
-    protected void onSaveInstanceState(Bundle outState) {
-        webView.saveState(outState);
-        super.onSaveInstanceState(outState);
-    }
-
-    @Override
-    @SuppressWarnings("deprecation")
-    public void onBackPressed() {
-        if (webView != null && webView.canGoBack()) webView.goBack();
-        else super.onBackPressed();
-    }
-
-    @Override
-    protected void onDestroy() {
-        if (webView != null) {
-            webView.stopLoading();
-            webView.loadUrl("about:blank");
-            webView.destroy();
-            webView = null;
-        }
-        super.onDestroy();
-    }
+    @Override protected void onSaveInstanceState(Bundle outState) { webView.saveState(outState); super.onSaveInstanceState(outState); }
+    @Override @SuppressWarnings("deprecation") public void onBackPressed() { if (webView != null && webView.canGoBack()) webView.goBack(); else super.onBackPressed(); }
+    @Override protected void onDestroy() { if (webView != null) { webView.stopLoading(); webView.loadUrl("about:blank"); webView.destroy(); webView = null; } super.onDestroy(); }
 }
