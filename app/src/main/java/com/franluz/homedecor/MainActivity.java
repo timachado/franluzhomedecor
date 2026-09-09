@@ -18,11 +18,10 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
 import android.widget.ProgressBar;
-import android.widget.TextView;
 
 public class MainActivity extends Activity {
-    private static final String HOME_URL = "https://franluzhomedecor.flashhub.net/?pwa=1&app=android";
-    private static final String HOME_HOST = "franluzhomedecor.flashhub.net";
+    private static final String HOME_URL = "https://franluzhomedecor.infinityfree.io/?pwa=1&app=android";
+    private static final String HOME_HOST = "franluzhomedecor.infinityfree.io";
     private static final int FILE_CHOOSER_REQUEST = 9021;
 
     private WebView webView;
@@ -75,7 +74,7 @@ public class MainActivity extends Activity {
         settings.setJavaScriptCanOpenWindowsAutomatically(true);
         settings.setMediaPlaybackRequiresUserGesture(false);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
-        settings.setUserAgentString(settings.getUserAgentString() + " FranLuzAndroid/2.8.3");
+        settings.setUserAgentString(settings.getUserAgentString() + " FranLuzAndroid/2.8.5");
 
         CookieManager cookieManager = CookieManager.getInstance();
         cookieManager.setAcceptCookie(true);
