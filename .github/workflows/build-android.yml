@@ -25,10 +25,10 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.13'
-      - name: Preparar versão 1.3.0
+      - name: Preparar versão 1.4.0
         run: |
-          sed -i "s/versionCode 5/versionCode 7/" app/build.gradle
-          sed -i "s/versionName '1.1.1'/versionName '1.3.0'/" app/build.gradle
+          sed -i "s/versionCode 5/versionCode 8/" app/build.gradle
+          sed -i "s/versionName '1.1.1'/versionName '1.4.0'/" app/build.gradle
       - name: Gerar APK
         run: gradle --no-daemon assembleDebug
       - name: Gerar AAB de teste
@@ -36,7 +36,7 @@ jobs:
       - name: Publicar APK
         uses: actions/upload-artifact@v4
         with:
-          name: Biblia-EBD-Android-1.3.0-Revistas
+          name: Biblia-EBD-Android-1.4.0-Revistas-Premium
           path: |
             app/build/outputs/apk/debug/app-debug.apk
             app/build/outputs/bundle/debug/app-debug.aab
