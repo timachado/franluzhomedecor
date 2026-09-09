@@ -10,8 +10,8 @@ android {
         applicationId 'com.franluz.homedecor'
         minSdk 23
         targetSdk 36
-        versionCode 28600
-        versionName '2.8.6'
+        versionCode 28700
+        versionName '2.8.7'
     }
 
     buildTypes {
