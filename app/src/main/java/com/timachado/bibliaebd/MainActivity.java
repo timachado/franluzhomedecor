@@ -6,7 +6,6 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.util.Base64;
 import android.view.ViewGroup;
 import android.view.WindowInsets;
 import android.webkit.WebResourceRequest;
@@ -16,11 +15,9 @@ import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.zip.GZIPInputStream;
 
 public class MainActivity extends Activity {
     private WebView webView;
@@ -98,21 +95,18 @@ public class MainActivity extends Activity {
 
     private void loadBundledApp() {
         try {
-            InputStream input = getAssets().open("index.html.gz.b64");
-            BufferedReader reader = new BufferedReader(new InputStreamReader(input, StandardCharsets.US_ASCII));
-            StringBuilder b64 = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) b64.append(line);
-            reader.close();
-            byte[] compressed = Base64.decode(b64.toString(), Base64.DEFAULT);
-            GZIPInputStream gzip = new GZIPInputStream(new ByteArrayInputStream(compressed));
-            BufferedReader htmlReader = new BufferedReader(new InputStreamReader(gzip, StandardCharsets.UTF_8));
+            InputStream input = getAssets().open("index.html");
+            BufferedReader reader = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8));
             StringBuilder html = new StringBuilder();
-            while ((line = htmlReader.readLine()) != null) html.append(line).append('\n');
-            htmlReader.close();
+            String line;
+            while ((line = reader.readLine()) != null) html.append(line).append('\n');
+            reader.close();
             webView.loadDataWithBaseURL("https://app.local/", html.toString(), "text/html", "UTF-8", null);
         } catch (Exception e) {
-            webView.loadData("<h2>Bíblia EBD</h2><p>Não foi possível carregar a interface.</p>", "text/html", "UTF-8");
+            String safe = "<html><body style='background:#070916;color:#fff;font-family:sans-serif;padding:24px'>" +
+                    "<h2>Bíblia EBD</h2><p>Falha ao carregar a interface.</p><p style='opacity:.7;font-size:12px'>" +
+                    e.getClass().getSimpleName() + "</p></body></html>";
+            webView.loadData(safe, "text/html", "UTF-8");
         }
     }
 
