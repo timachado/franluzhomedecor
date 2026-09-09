@@ -1,0 +1,29 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.franluz.homedecor'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId 'com.franluz.homedecor'
+        minSdk 23
+        targetSdk 36
+        versionCode 28200
+        versionName '2.8.2'
+    }
+
+    buildTypes {
+        debug {
+            minifyEnabled false
+        }
+        release {
+            minifyEnabled false
+        }
+    }
+}
+
+dependencies {
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.7.3'
+}
