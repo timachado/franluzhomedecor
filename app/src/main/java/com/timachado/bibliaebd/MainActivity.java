@@ -7,11 +7,13 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Base64;
+import android.view.ViewGroup;
 import android.view.WindowInsets;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.FrameLayout;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -22,24 +24,46 @@ import java.util.zip.GZIPInputStream;
 
 public class MainActivity extends Activity {
     private WebView webView;
+    private FrameLayout root;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        root = new FrameLayout(this);
+        root.setBackgroundColor(Color.rgb(250, 248, 243));
+
         webView = new WebView(this);
         webView.setBackgroundColor(Color.rgb(250, 248, 243));
-        setContentView(webView);
+        root.addView(webView, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+        ));
+        setContentView(root);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            webView.setOnApplyWindowInsetsListener((view, insets) -> {
-                android.graphics.Insets bars = insets.getInsets(WindowInsets.Type.systemBars());
-                view.setPadding(0, bars.top, 0, bars.bottom);
-                return WindowInsets.CONSUMED;
-            });
-        } else {
-            webView.setFitsSystemWindows(true);
-        }
+        // Android 15/16 trabalha em edge-to-edge. Aplicamos os insets no CONTÊINER,
+        // reduzindo de verdade a área útil do WebView e impedindo que a navegação
+        // do app fique atrás das barras do Android.
+        root.setOnApplyWindowInsetsListener((view, insets) -> {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                android.graphics.Insets bars = insets.getInsets(
+                        WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout()
+                );
+                view.setPadding(bars.left, bars.top, bars.right, bars.bottom);
+            } else {
+                @SuppressWarnings("deprecation")
+                int left = insets.getSystemWindowInsetLeft();
+                @SuppressWarnings("deprecation")
+                int top = insets.getSystemWindowInsetTop();
+                @SuppressWarnings("deprecation")
+                int right = insets.getSystemWindowInsetRight();
+                @SuppressWarnings("deprecation")
+                int bottom = insets.getSystemWindowInsetBottom();
+                view.setPadding(left, top, right, bottom);
+            }
+            return insets;
+        });
+        root.requestApplyInsets();
 
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
@@ -49,6 +73,10 @@ public class MainActivity extends Activity {
         settings.setAllowContentAccess(false);
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
+        settings.setSupportZoom(false);
+        settings.setTextZoom(100);
+        settings.setUseWideViewPort(true);
+        settings.setLoadWithOverviewMode(false);
         settings.setMediaPlaybackRequiresUserGesture(true);
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
 
