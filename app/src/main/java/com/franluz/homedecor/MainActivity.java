@@ -4,12 +4,16 @@ import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.graphics.Color;
+import android.graphics.Insets;
 import android.net.Uri;
 import android.net.http.SslError;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowInsets;
+import android.view.WindowManager;
 import android.webkit.CookieManager;
 import android.webkit.SslErrorHandler;
 import android.webkit.ValueCallback;
@@ -27,7 +31,8 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 public class MainActivity extends Activity {
-    private static final String HOME_URL = "https://franluzhomedecor.infinityfree.io/?pwa=1&app=android";
+    private static final String BASE_URL = "https://franluzhomedecor.infinityfree.io/";
+    private static final String HOME_URL = BASE_URL + "?pwa=1&app=android";
     private static final String HOME_HOST = "franluzhomedecor.infinityfree.io";
     private static final int FILE_CHOOSER_REQUEST = 9021;
     private static final int IVORY = Color.rgb(255, 250, 244);
@@ -48,9 +53,15 @@ public class MainActivity extends Activity {
 
         getWindow().setStatusBarColor(CHOCOLATE);
         getWindow().setNavigationBarColor(Color.rgb(48, 32, 25));
+        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            getWindow().setStatusBarContrastEnforced(false);
+            getWindow().setNavigationBarContrastEnforced(false);
+        }
 
         FrameLayout root = new FrameLayout(this);
         root.setBackgroundColor(IVORY);
+        applySystemBarInsets(root);
 
         webView = new WebView(this);
         webView.setBackgroundColor(IVORY);
@@ -77,6 +88,7 @@ public class MainActivity extends Activity {
 
         setContentView(root);
         configureWebView();
+        markAndroidAppCookie();
 
         if (savedInstanceState == null) {
             showLoading("Abrindo a FranLuz…");
@@ -85,6 +97,41 @@ public class MainActivity extends Activity {
             webView.restoreState(savedInstanceState);
             loadingOverlay.setVisibility(View.GONE);
         }
+    }
+
+    private void applySystemBarInsets(View root) {
+        root.setOnApplyWindowInsetsListener((v, windowInsets) -> {
+            int left;
+            int top;
+            int right;
+            int bottom;
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                Insets bars = windowInsets.getInsets(
+                        WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
+                left = bars.left;
+                top = bars.top;
+                right = bars.right;
+                bottom = bars.bottom;
+            } else {
+                left = windowInsets.getSystemWindowInsetLeft();
+                top = windowInsets.getSystemWindowInsetTop();
+                right = windowInsets.getSystemWindowInsetRight();
+                bottom = windowInsets.getSystemWindowInsetBottom();
+            }
+
+            v.setPadding(left, top, right, bottom);
+            return windowInsets;
+        });
+        root.requestApplyInsets();
+    }
+
+    private void markAndroidAppCookie() {
+        CookieManager cookieManager = CookieManager.getInstance();
+        cookieManager.setAcceptCookie(true);
+        cookieManager.setAcceptThirdPartyCookies(webView, true);
+        cookieManager.setCookie(BASE_URL, "franluz_app=android; Path=/; Secure; SameSite=Lax");
+        cookieManager.flush();
     }
 
     private void buildLoadingOverlay() {
@@ -137,6 +184,7 @@ public class MainActivity extends Activity {
         retryParams.topMargin = dp(18);
         retryButton.setOnClickListener(v -> {
             showLoading("Reconectando à loja…");
+            markAndroidAppCookie();
             webView.loadUrl(HOME_URL);
         });
 
@@ -190,17 +238,13 @@ public class MainActivity extends Activity {
             @Override
             public void onPageCommitVisible(WebView view, String url) {
                 super.onPageCommitVisible(view, url);
-                if (!pageError) {
-                    hideLoading();
-                }
+                if (!pageError) hideLoading();
             }
 
             @Override
             public void onPageFinished(WebView view, String url) {
                 CookieManager.getInstance().flush();
-                if (!pageError) {
-                    hideLoading();
-                }
+                if (!pageError) hideLoading();
             }
 
             @Override
@@ -236,9 +280,7 @@ public class MainActivity extends Activity {
 
             @Override
             public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> callback, FileChooserParams fileChooserParams) {
-                if (filePathCallback != null) {
-                    filePathCallback.onReceiveValue(null);
-                }
+                if (filePathCallback != null) filePathCallback.onReceiveValue(null);
                 filePathCallback = callback;
                 Intent intent = fileChooserParams.createIntent();
                 intent.addCategory(Intent.CATEGORY_OPENABLE);
@@ -281,30 +323,53 @@ public class MainActivity extends Activity {
         String host = uri.getHost() == null ? "" : uri.getHost().toLowerCase();
 
         if (("https".equals(scheme) || "http".equals(scheme)) && HOME_HOST.equals(host)) {
+            if ("1".equals(uri.getQueryParameter("franluz_app_google_start"))) {
+                openExternal(uri);
+                return true;
+            }
             return false;
         }
 
-        if ("about".equals(scheme) || "data".equals(scheme) || "blob".equals(scheme)) {
-            return false;
-        }
+        if ("about".equals(scheme) || "data".equals(scheme) || "blob".equals(scheme)) return false;
 
+        openExternal(uri);
+        return true;
+    }
+
+    private void openExternal(Uri uri) {
         try {
             Intent external = new Intent(Intent.ACTION_VIEW, uri);
+            external.addCategory(Intent.CATEGORY_BROWSABLE);
             startActivity(external);
         } catch (Exception ignored) {
-            if ("http".equals(scheme) || "https".equals(scheme)) {
+            if ("http".equalsIgnoreCase(uri.getScheme()) || "https".equalsIgnoreCase(uri.getScheme())) {
                 showLoading("Abrindo página…");
                 webView.loadUrl(uri.toString());
             }
         }
-        return true;
     }
 
     private void handleIntent(Intent intent) {
         Uri data = intent != null ? intent.getData() : null;
+
+        if (data != null && "franluz".equalsIgnoreCase(data.getScheme()) && "auth".equalsIgnoreCase(data.getHost())) {
+            String token = data.getQueryParameter("token");
+            if (token != null && !token.trim().isEmpty()) {
+                Uri handoff = Uri.parse(BASE_URL).buildUpon()
+                        .appendQueryParameter("franluz_app_handoff", token)
+                        .appendQueryParameter("app", "android")
+                        .build();
+                markAndroidAppCookie();
+                webView.loadUrl(handoff.toString());
+                return;
+            }
+        }
+
         if (data != null && HOME_HOST.equalsIgnoreCase(data.getHost())) {
+            markAndroidAppCookie();
             webView.loadUrl(data.toString());
         } else {
+            markAndroidAppCookie();
             webView.loadUrl(HOME_URL);
         }
     }
@@ -313,7 +378,7 @@ public class MainActivity extends Activity {
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
-        showLoading("Abrindo link…");
+        showLoading("Concluindo login…");
         handleIntent(intent);
     }
 
