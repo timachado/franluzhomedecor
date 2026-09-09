@@ -10,8 +10,8 @@ android {
         applicationId 'com.franluz.homedecor'
         minSdk 23
         targetSdk 36
-        versionCode 28200
-        versionName '2.8.2'
+        versionCode 28300
+        versionName '2.8.3'
     }
 
     buildTypes {
@@ -25,5 +25,4 @@ android {
 }
 
 dependencies {
-    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.7.3'
 }
