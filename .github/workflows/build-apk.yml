@@ -11,6 +11,15 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+      - name: Probe FranLuz site
+        run: |
+          echo '=== HEAD ==='
+          curl -I -L --max-time 20 -A 'Mozilla/5.0 Android WebView FranLuzProbe/2.8.4' 'https://franluzhomedecor.flashhub.net/?pwa=1&app=android' || true
+          echo '=== BODY ==='
+          curl -L --max-time 20 -A 'Mozilla/5.0 Android WebView FranLuzProbe/2.8.4' -sS -D /tmp/headers.txt -o /tmp/body.html 'https://franluzhomedecor.flashhub.net/?pwa=1&app=android' || true
+          cat /tmp/headers.txt || true
+          echo 'bytes:' $(wc -c </tmp/body.html 2>/dev/null || echo 0)
+          head -c 1200 /tmp/body.html 2>/dev/null || true
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -27,9 +36,9 @@ jobs:
         run: |
           ls -lah app/build/outputs/apk/debug/
           $ANDROID_HOME/build-tools/36.0.0/apksigner verify --verbose --print-certs app/build/outputs/apk/debug/app-debug.apk
-          cp app/build/outputs/apk/debug/app-debug.apk FranLuz_Home_Decor_2.8.2.apk
+          cp app/build/outputs/apk/debug/app-debug.apk FranLuz_Home_Decor_2.8.4.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: FranLuz-Android-2.8.2-APK
-          path: FranLuz_Home_Decor_2.8.2.apk
+          name: FranLuz-Android-2.8.4-APK
+          path: FranLuz_Home_Decor_2.8.4.apk
           retention-days: 30
