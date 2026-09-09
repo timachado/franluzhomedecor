@@ -33,9 +33,9 @@ jobs:
         run: |
           $ANDROID_HOME/build-tools/36.0.0/apksigner verify --verbose --print-certs app/build/outputs/apk/debug/app-debug.apk
           $ANDROID_HOME/build-tools/36.0.0/aapt dump badging app/build/outputs/apk/debug/app-debug.apk | head -n 3
-          cp app/build/outputs/apk/debug/app-debug.apk FranLuz_Home_Decor_2.8.7_Android15_GoogleFix.apk
+          cp app/build/outputs/apk/debug/app-debug.apk FranLuz_Home_Decor_2.8.8_Icone_Oficial.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: FranLuz-Android-2.8.7-Android15-GoogleFix-APK
-          path: FranLuz_Home_Decor_2.8.7_Android15_GoogleFix.apk
+          name: FranLuz-Android-2.8.8-Icone-Oficial-APK
+          path: FranLuz_Home_Decor_2.8.8_Icone_Oficial.apk
           retention-days: 30
