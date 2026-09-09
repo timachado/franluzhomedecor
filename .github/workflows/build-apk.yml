@@ -11,17 +11,12 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - name: Probe FranLuz SSL and origin
+      - name: Probe FranLuz InfinityFree HTTPS
         run: |
           echo '=== CERTIFICATE ==='
-          echo | openssl s_client -connect franluzhomedecor.flashhub.net:443 -servername franluzhomedecor.flashhub.net 2>/dev/null | openssl x509 -noout -subject -issuer -dates -ext subjectAltName || true
-          echo '=== HTTPS STRICT ==='
-          curl -I -L --max-time 20 'https://franluzhomedecor.flashhub.net/?pwa=1&app=android' || true
-          echo '=== HTTPS INSECURE DIAGNOSTIC ONLY ==='
-          curl -k -L --max-time 20 -sS -D /tmp/headers.txt -o /tmp/body.html 'https://franluzhomedecor.flashhub.net/?pwa=1&app=android' || true
-          cat /tmp/headers.txt || true
-          echo 'bytes:' $(wc -c </tmp/body.html 2>/dev/null || echo 0)
-          head -c 1800 /tmp/body.html 2>/dev/null || true
+          echo | openssl s_client -connect franluzhomedecor.infinityfree.io:443 -servername franluzhomedecor.infinityfree.io 2>/dev/null | openssl x509 -noout -subject -issuer -dates -ext subjectAltName || true
+          echo '=== HTTPS ==='
+          curl -I -L --max-time 30 -A 'Mozilla/5.0 Android WebView FranLuzAndroid/2.8.5' 'https://franluzhomedecor.infinityfree.io/?pwa=1&app=android' || true
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -37,9 +32,9 @@ jobs:
       - name: Verify and rename
         run: |
           $ANDROID_HOME/build-tools/36.0.0/apksigner verify --verbose --print-certs app/build/outputs/apk/debug/app-debug.apk
-          cp app/build/outputs/apk/debug/app-debug.apk FranLuz_Home_Decor_2.8.4.apk
+          cp app/build/outputs/apk/debug/app-debug.apk FranLuz_Home_Decor_2.8.5.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: FranLuz-Android-2.8.4-APK
-          path: FranLuz_Home_Decor_2.8.4.apk
+          name: FranLuz-Android-2.8.5-APK
+          path: FranLuz_Home_Decor_2.8.5.apk
           retention-days: 30
