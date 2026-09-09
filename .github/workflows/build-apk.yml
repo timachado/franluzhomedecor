@@ -18,24 +18,21 @@ jobs:
           echo '3e84977d0021e281d60a6adc8e39bbc806ce1c9cc5fa61dde9c5a52179b6e0e8  app/icon_parts/part2.b64' | sha256sum -c - || true
           echo '9e28c0833a6193959f448497ed335c0c897af5f8c444f96268673e39969f704b  app/icon_parts/part3.b64' | sha256sum -c - || true
           echo 'a714f3100424dbbd0a848216ef530372f52a42d1436c4fe8f80a98f1d57a2d6c  app/icon_parts/part4.b64' | sha256sum -c - || true
-          sha256sum app/icon_parts/part*.b64
+          echo '=== PART 2 QUARTERS ==='
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          s = Path('app/icon_parts/part2.b64').read_text()
+          for i in range(4):
+              q = s[i*875:(i+1)*875]
+              print(i+1, len(q), hashlib.sha256(q.encode()).hexdigest())
+          PY
           mkdir -p app/src/main/res/drawable-nodpi
           cat app/icon_parts/part1.b64 app/icon_parts/part2.b64 app/icon_parts/part3.b64 app/icon_parts/part4.b64 | tr -d '\r\n' | base64 -d > app/src/main/res/drawable-nodpi/franluz_app_icon.png
           file app/src/main/res/drawable-nodpi/franluz_app_icon.png
-          sha256sum app/src/main/res/drawable-nodpi/franluz_app_icon.png
           echo 'c475e22792192438093b2b303b996d909ec14891fa2a8210471d780ef6b0f28e  app/src/main/res/drawable-nodpi/franluz_app_icon.png' | sha256sum -c -
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path('app/src/main/res/drawable-nodpi/franluz_app_icon.png').read_bytes()
-          assert p[:8] == b'\x89PNG\r\n\x1a\n', 'Launcher icon is not a PNG'
-          assert len(p) == 9890, f'Unexpected icon size: {len(p)}'
-          print('Official FranLuz PNG verified:', len(p), 'bytes')
-          PY
       - name: Probe FranLuz InfinityFree HTTPS
         run: |
-          echo '=== CERTIFICATE ==='
-          echo | openssl s_client -connect franluzhomedecor.infinityfree.io:443 -servername franluzhomedecor.infinityfree.io 2>/dev/null | openssl x509 -noout -subject -issuer -dates -ext subjectAltName || true
-          echo '=== HTTPS ==='
           curl -I -L --max-time 30 -A 'Mozilla/5.0 Android WebView' 'https://franluzhomedecor.infinityfree.io/?pwa=1&app=android' || true
       - uses: actions/setup-java@v4
         with:
