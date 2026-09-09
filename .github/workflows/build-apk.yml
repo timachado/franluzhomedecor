@@ -13,9 +13,16 @@ jobs:
       - uses: actions/checkout@v4
       - name: Rebuild and verify official FranLuz icon
         run: |
+          echo '=== BASE64 PART CHECKS ==='
+          echo 'd2ed9b23bb2c8477797352fcd7af7109f3fc980a4f786c43be058addab4454df  app/icon_parts/part1.b64' | sha256sum -c - || true
+          echo '3e84977d0021e281d60a6adc8e39bbc806ce1c9cc5fa61dde9c5a52179b6e0e8  app/icon_parts/part2.b64' | sha256sum -c - || true
+          echo '9e28c0833a6193959f448497ed335c0c897af5f8c444f96268673e39969f704b  app/icon_parts/part3.b64' | sha256sum -c - || true
+          echo 'a714f3100424dbbd0a848216ef530372f52a42d1436c4fe8f80a98f1d57a2d6c  app/icon_parts/part4.b64' | sha256sum -c - || true
+          sha256sum app/icon_parts/part*.b64
           mkdir -p app/src/main/res/drawable-nodpi
           cat app/icon_parts/part1.b64 app/icon_parts/part2.b64 app/icon_parts/part3.b64 app/icon_parts/part4.b64 | tr -d '\r\n' | base64 -d > app/src/main/res/drawable-nodpi/franluz_app_icon.png
           file app/src/main/res/drawable-nodpi/franluz_app_icon.png
+          sha256sum app/src/main/res/drawable-nodpi/franluz_app_icon.png
           echo 'c475e22792192438093b2b303b996d909ec14891fa2a8210471d780ef6b0f28e  app/src/main/res/drawable-nodpi/franluz_app_icon.png' | sha256sum -c -
           python3 - <<'PY'
           from pathlib import Path
