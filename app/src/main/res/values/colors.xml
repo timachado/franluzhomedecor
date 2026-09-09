@@ -1,6 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#573225</color>
-    <color name="navigationColor">#FFFAF4</color>
-    <color name="iconBackground">#573225</color>
+    <color name="brand_blue">#102A43</color>
+    <color name="brand_ivory">#FAF8F3</color>
 </resources>

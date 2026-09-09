@@ -3,27 +3,25 @@ plugins {
 }
 
 android {
-    namespace 'com.franluz.homedecor'
+    namespace 'com.timachado.bibliaebd'
     compileSdk 36
 
     defaultConfig {
-        applicationId 'com.franluz.homedecor'
-        minSdk 23
+        applicationId 'com.timachado.bibliaebd'
+        minSdk 24
         targetSdk 36
-        versionCode 28200
-        versionName '2.8.2'
+        versionCode 1
+        versionName '1.0.0'
     }
 
     buildTypes {
         debug {
-            minifyEnabled false
+            applicationIdSuffix ''
+            versionNameSuffix '-teste'
         }
         release {
             minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
-}
-
-dependencies {
-    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.7.3'
 }
