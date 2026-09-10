@@ -1,0 +1,30 @@
+name: Export Android Sign Tools Temp
+
+on:
+  push:
+    branches:
+      - build-biblia-ebd-temp
+  workflow_dispatch:
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: android-actions/setup-android@v3
+      - name: Instalar build tools
+        run: sdkmanager "build-tools;35.0.0"
+      - name: Preparar ferramentas
+        run: |
+          mkdir -p out/lib out/lib64
+          cp "$ANDROID_HOME/build-tools/35.0.0/apksigner" out/
+          cp "$ANDROID_HOME/build-tools/35.0.0/zipalign" out/
+          cp "$ANDROID_HOME/build-tools/35.0.0/lib/apksigner.jar" out/lib/
+          if [ -f "$ANDROID_HOME/build-tools/35.0.0/lib64/libc++.so" ]; then cp "$ANDROID_HOME/build-tools/35.0.0/lib64/libc++.so" out/lib64/; fi
+          cp app/test-signing.jks out/test-signing.jks
+          chmod +x out/apksigner out/zipalign
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Biblia-EBD-Sign-Tools-Temp
+          path: out
+          retention-days: 1
