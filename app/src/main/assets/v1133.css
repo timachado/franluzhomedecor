@@ -1,0 +1,11 @@
+/* 1.13.3 — correção estrutural de toque e rolagem no WebView */
+html,body{height:auto!important;min-height:100%!important;overflow-x:hidden!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch!important;touch-action:pan-y!important}
+body{position:static!important}
+.shell{height:auto!important;min-height:100dvh!important;overflow:visible!important;touch-action:pan-y!important}
+.content{height:auto!important;min-height:calc(100dvh - var(--topH))!important;overflow:visible!important;touch-action:pan-y!important}
+.topbar,.bottomnav{contain:none!important}
+.topbar{pointer-events:auto!important}
+.topbar .brand,.topbar button,.bottomnav button,.v113-quick,.v113-more button,.v113-ebd-card,.v113-journey>button,.v113-continue{pointer-events:auto!important}
+.menu-sheet:not(.show){display:none!important;pointer-events:none!important}
+.menu-sheet.show{display:flex!important;pointer-events:auto!important}
+button,a,input,select,textarea{touch-action:manipulation}
