@@ -174,8 +174,8 @@ public class MainActivity extends Activity {
 
     private void handleBack() {
         if (webView == null) { finish(); return; }
-        webView.evaluateJavascript("(window.__ebdNativeBack112&&window.__ebdNativeBack112())?'true':'false'", value -> {
-            if ("true".equals(value)) return;
+        webView.evaluateJavascript("!!(window.__ebdNativeBack112 && window.__ebdNativeBack112())", value -> {
+            if ("true".equalsIgnoreCase(value)) return;
             if (webView != null && webView.canGoBack()) webView.goBack();
             else finish();
         });
@@ -185,7 +185,7 @@ public class MainActivity extends Activity {
         try {
             return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
         } catch (Exception ignored) {
-            return "1.13.3";
+            return "1.13.4";
         }
     }
 
