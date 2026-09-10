@@ -117,3 +117,18 @@ jobs:
             app/build/outputs/apk/debug/app-debug.apk
             app/build/outputs/bundle/debug/app-debug.aab
           retention-days: 7
+
+      - name: Preparar ferramentas de assinatura local
+        run: |
+          mkdir -p sign-tools/lib
+          cp "$ANDROID_HOME/build-tools/35.0.0/apksigner" sign-tools/
+          cp "$ANDROID_HOME/build-tools/35.0.0/zipalign" sign-tools/
+          cp "$ANDROID_HOME/build-tools/35.0.0/lib/apksigner.jar" sign-tools/lib/
+          chmod +x sign-tools/apksigner sign-tools/zipalign
+
+      - name: Publicar ferramentas de assinatura
+        uses: actions/upload-artifact@v4
+        with:
+          name: Android-Sign-Tools-35
+          path: sign-tools
+          retention-days: 1
