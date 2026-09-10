@@ -45,8 +45,16 @@ public class MainActivity extends Activity {
         webView = new WebView(this);
         webView.setBackgroundColor(DARK);
         webView.setAlpha(0.01f);
+        webView.setVerticalScrollBarEnabled(true);
+        webView.setOverScrollMode(View.OVER_SCROLL_IF_CONTENT_SCROLLS);
+        webView.setFocusable(true);
+        webView.setFocusableInTouchMode(true);
         root.addView(webView, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
         splashView = createSplash();
+        splashView.setClickable(false);
+        splashView.setFocusable(false);
+        splashView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         root.addView(splashView, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         setContentView(root);
 
@@ -92,13 +100,16 @@ public class MainActivity extends Activity {
         webView.setWebViewClient(new WebViewClient() {
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) { return handleUri(request.getUrl()); }
             @Override @SuppressWarnings("deprecation") public boolean shouldOverrideUrlLoading(WebView view, String url) { return handleUri(Uri.parse(url)); }
-            @Override public void onPageFinished(WebView view, String url) { hideSplash(); }
+            @Override public void onPageFinished(WebView view, String url) {
+                hideSplash();
+                view.requestFocus();
+            }
         });
 
         if (savedInstanceState == null) webView.loadUrl("file:///android_asset/index.html");
         else if (webView.restoreState(savedInstanceState) == null) webView.loadUrl("file:///android_asset/index.html");
 
-        root.postDelayed(this::hideSplash, 1800);
+        root.postDelayed(this::hideSplash, 1400);
     }
 
     private View createSplash() {
@@ -137,12 +148,18 @@ public class MainActivity extends Activity {
     private void hideSplash() {
         if (splashHidden || webView == null) return;
         splashHidden = true;
-        webView.animate().alpha(1f).setDuration(180).start();
+
+        webView.animate().cancel();
+        webView.setAlpha(1f);
+        webView.setVisibility(View.VISIBLE);
+        webView.requestFocus();
+
         if (splashView != null) {
-            splashView.animate().alpha(0f).setDuration(220).withEndAction(() -> {
-                if (splashView != null && splashView.getParent() == root) root.removeView(splashView);
-                splashView = null;
-            }).start();
+            splashView.animate().cancel();
+            splashView.clearAnimation();
+            splashView.setVisibility(View.GONE);
+            if (splashView.getParent() == root) root.removeView(splashView);
+            splashView = null;
         }
     }
 
@@ -168,7 +185,7 @@ public class MainActivity extends Activity {
         try {
             return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
         } catch (Exception ignored) {
-            return "1.13.2";
+            return "1.13.3";
         }
     }
 
@@ -204,6 +221,6 @@ public class MainActivity extends Activity {
     @Override protected void onSaveInstanceState(Bundle outState) { if (webView != null) webView.saveState(outState); super.onSaveInstanceState(outState); }
     @Override @SuppressWarnings("deprecation") public void onBackPressed() { handleBack(); }
     @Override protected void onPause() { super.onPause(); }
-    @Override protected void onResume() { super.onResume(); if (root != null) root.requestApplyInsets(); }
+    @Override protected void onResume() { super.onResume(); if (root != null) root.requestApplyInsets(); if (webView != null) webView.requestFocus(); }
     @Override protected void onDestroy() { if (webView != null) { webView.removeJavascriptInterface("AndroidBridge"); webView.stopLoading(); webView.loadUrl("about:blank"); webView.destroy(); webView = null; } super.onDestroy(); }
 }
