@@ -174,8 +174,16 @@ public class MainActivity extends Activity {
 
     private void handleBack() {
         if (webView == null) { finish(); return; }
+
+        // A SPA controla toda a navegação interna. Quando ela devolve false,
+        // significa especificamente "sair agora" (segundo Voltar na Home).
+        // Não consultar webView.canGoBack() aqui: hashes de rotas (#/bible, #/ebd...)
+        // ficam no histórico do WebView e fariam uma página antiga reaparecer antes de sair.
         webView.evaluateJavascript("!!(window.__ebdNativeBack112 && window.__ebdNativeBack112())", value -> {
             if ("true".equalsIgnoreCase(value)) return;
+            if ("false".equalsIgnoreCase(value)) { finish(); return; }
+
+            // Fallback somente se o JavaScript ainda não estiver disponível.
             if (webView != null && webView.canGoBack()) webView.goBack();
             else finish();
         });
@@ -185,7 +193,7 @@ public class MainActivity extends Activity {
         try {
             return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
         } catch (Exception ignored) {
-            return "1.13.4";
+            return "1.13.9";
         }
     }
 
