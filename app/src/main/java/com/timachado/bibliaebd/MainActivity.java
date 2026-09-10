@@ -87,7 +87,7 @@ public class MainActivity extends Activity {
             settings.setSafeBrowsingEnabled(true);
         }
 
-        WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG);
+        WebView.setWebContentsDebuggingEnabled(false);
         webView.addJavascriptInterface(new NativeBridge(), "AndroidBridge");
         webView.setWebViewClient(new WebViewClient() {
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) { return handleUri(request.getUrl()); }
@@ -171,8 +171,16 @@ public class MainActivity extends Activity {
         });
     }
 
+    private String installedVersionName() {
+        try {
+            return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+        } catch (Exception ignored) {
+            return "1.12.0";
+        }
+    }
+
     private class NativeBridge {
-        @JavascriptInterface public String appVersion() { return BuildConfig.VERSION_NAME; }
+        @JavascriptInterface public String appVersion() { return installedVersionName(); }
 
         @JavascriptInterface public void haptic() {
             runOnUiThread(() -> {
