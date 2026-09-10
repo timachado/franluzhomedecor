@@ -81,7 +81,7 @@ jobs:
           print('Harpa validada:',len(catalog),'números/títulos')
           PY
 
-      - name: Validar JavaScript da 1.13.3
+      - name: Validar JavaScript da 1.13.4
         run: |
           node --check app/src/main/assets/app9.js
           node --check app/src/main/assets/app10.js
@@ -94,17 +94,18 @@ jobs:
           node --check app/src/main/assets/app17.js
           node --check app/src/main/assets/app18.js
           node --check app/src/main/assets/app19.js
+          node --check app/src/main/assets/app20.js
           node -e "global.window={};require('./app/src/main/assets/bible-data.js');if(window.BIBLE_DATA_V18.stats.books!==66||window.BIBLE_DATA_V18.stats.verses!==31098)process.exit(1);console.log(window.BIBLE_DATA_V18.stats)"
           node -e "global.window={};require('./app/src/main/assets/harpa-data.js');if(window.HARPA_CATALOG_V18.length!==640)process.exit(1);console.log('Harpa',window.HARPA_CATALOG_V18.length)"
-          grep -q 'app19.js' app/src/main/assets/index.html
-          grep -q 'v1133.css' app/src/main/assets/index.html
-          grep -q 'data-route="ebd"' app/src/main/assets/index.html
-          grep -q 'data-route="search"' app/src/main/assets/index.html
+          grep -q 'app20.js' app/src/main/assets/index.html
+          grep -q 'v1134.css' app/src/main/assets/index.html
+          grep -q 'overflow-y:auto' app/src/main/assets/v1134.css
+          grep -q '__ebdNativeBack112' app/src/main/assets/app20.js
 
-      - name: Preparar versão 1.13.3
+      - name: Preparar versão 1.13.4
         run: |
-          sed -i "s/versionCode 5/versionCode 21/" app/build.gradle
-          sed -i "s/versionName '1.1.1'/versionName '1.13.3'/" app/build.gradle
+          sed -i "s/versionCode 5/versionCode 22/" app/build.gradle
+          sed -i "s/versionName '1.1.1'/versionName '1.13.4'/" app/build.gradle
 
       - name: Gerar APK
         run: gradle --no-daemon assembleDebug
@@ -115,7 +116,7 @@ jobs:
       - name: Publicar APK
         uses: actions/upload-artifact@v4
         with:
-          name: Biblia-EBD-Android-1.13.3-Toque-Rolagem
+          name: Biblia-EBD-Android-1.13.4-Rolagem-Voltar
           path: |
             app/build/outputs/apk/debug/app-debug.apk
             app/build/outputs/bundle/debug/app-debug.aab
