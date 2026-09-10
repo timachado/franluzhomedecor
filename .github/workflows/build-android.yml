@@ -109,8 +109,7 @@ jobs:
               json.dump(catalog,f,ensure_ascii=False,separators=(',',':'))
               f.write(';\n')
 
-          # O conteúdo privado das letras não é guardado no repositório.
-          # Este placeholder é substituído pela fonte pessoal durante o build privado entregue ao proprietário.
+          # Placeholder substituído pela fonte pessoal somente na compilação privada.
           with open('app/src/main/assets/harpa-lyrics-user.js','w',encoding='utf-8') as f:
               f.write('window.HARPA_LYRICS_USER={};\n')
 
@@ -121,21 +120,22 @@ jobs:
           print('Harpa validada:', len(catalog), 'números/títulos')
           PY
 
-      - name: Validar JavaScript da 1.10.0
+      - name: Validar JavaScript da 1.11.0
         run: |
           node --check app/src/main/assets/app9.js
           node --check app/src/main/assets/app10.js
           node --check app/src/main/assets/app11.js
           node --check app/src/main/assets/app12.js
+          node --check app/src/main/assets/app13.js
           node -e "global.window={};require('./app/src/main/assets/bible-data.js');if(window.BIBLE_DATA_V18.stats.books!==66||window.BIBLE_DATA_V18.stats.verses!==31098)process.exit(1);console.log(window.BIBLE_DATA_V18.stats)"
           node -e "global.window={};require('./app/src/main/assets/harpa-data.js');if(window.HARPA_CATALOG_V18.length!==640)process.exit(1);console.log('Harpa',window.HARPA_CATALOG_V18.length)"
-          grep -q 'app12.js' app/src/main/assets/index.html
-          grep -q 'v110.css' app/src/main/assets/index.html
+          grep -q 'app13.js' app/src/main/assets/index.html
+          grep -q 'v111.css' app/src/main/assets/index.html
 
-      - name: Preparar versão 1.10.0
+      - name: Preparar versão 1.11.0
         run: |
-          sed -i "s/versionCode 5/versionCode 15/" app/build.gradle
-          sed -i "s/versionName '1.1.1'/versionName '1.10.0'/" app/build.gradle
+          sed -i "s/versionCode 5/versionCode 16/" app/build.gradle
+          sed -i "s/versionName '1.1.1'/versionName '1.11.0'/" app/build.gradle
 
       - name: Gerar APK
         run: gradle --no-daemon assembleDebug
@@ -146,7 +146,7 @@ jobs:
       - name: Publicar APK
         uses: actions/upload-artifact@v4
         with:
-          name: Biblia-EBD-Android-1.10.0-EBD-Premium
+          name: Biblia-EBD-Android-1.11.0-Rotina-Estudo
           path: |
             app/build/outputs/apk/debug/app-debug.apk
             app/build/outputs/bundle/debug/app-debug.aab
