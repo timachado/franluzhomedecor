@@ -80,16 +80,20 @@ jobs:
           print('Harpa:',len(catalog),'títulos')
           PY
 
-      - name: Validar 1.13.12
+      - name: Validar 1.14.0
         run: |
           node --check app/src/main/assets/app20.js
           node --check app/src/main/assets/app21.js
-          grep -q "closest('.menu-card')" app/src/main/assets/app21.js
-          grep -q 'menu-sheet.show' app/src/main/assets/v1136.css
+          node --check app/src/main/assets/app22.js
+          grep -q 'v114.css' app/src/main/assets/index.html
+          grep -q 'app22.js' app/src/main/assets/index.html
+          grep -q 'ministry114' app/src/main/assets/index.html
+          grep -q 'Modo Púlpito' app/src/main/assets/app22.js
+          grep -q 'Atlas Bíblico' app/src/main/assets/app22.js
+          grep -q 'versionCode 105' app/build.gradle
+          grep -q "versionName '1.14.0'" app/build.gradle
           grep -q 'height:100dvh!important' app/src/main/assets/v1136.css
           grep -q 'setTextZoom(108)' app/src/main/java/com/timachado/bibliaebd/MainActivity.java
-          grep -q 'versionCode 104' app/build.gradle
-          grep -q "versionName '1.13.12'" app/build.gradle
           grep -q 'if ("false".equalsIgnoreCase(value)) { finish(); return; }' app/src/main/java/com/timachado/bibliaebd/MainActivity.java
 
       - name: Gerar APK
@@ -101,7 +105,7 @@ jobs:
       - name: Publicar APK e AAB
         uses: actions/upload-artifact@v4
         with:
-          name: Biblia-EBD-Android-1.13.12-Fonte-Maior
+          name: Biblia-EBD-Android-1.14.0-Ministerio-Estudo
           path: |
             app/build/outputs/apk/debug/app-debug.apk
             app/build/outputs/bundle/debug/app-debug.aab
