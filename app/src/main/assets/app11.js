@@ -8,16 +8,27 @@ function saveHarpa191(){
   localStorage.setItem('ebd-harpa-font-191', String(state.harpaFont191));
   localStorage.setItem('ebd-last-hymn-191', String(state.lastHymn191));
 }
-function lyric191(n){ return String(HARPA_USER_191[String(Number(n))] || ''); }
-function harpaReady191(){ return Object.keys(HARPA_USER_191).length === 640; }
+function hymnPrivate191(n){
+  n=Number(n);
+  if(Array.isArray(HARPA_USER_191)) return HARPA_USER_191.find(x=>Number(x?.n)===n)||null;
+  const direct=HARPA_USER_191[String(n)];
+  if(typeof direct==='string') return {n,lyrics:direct};
+  if(direct&&typeof direct==='object') return direct;
+  const idx=HARPA_USER_191[n-1];
+  if(idx&&typeof idx==='object'&&Number(idx.n)===n) return idx;
+  return null;
+}
+function lyric191(n){ const h=hymnPrivate191(n); return String(h?.lyrics || ''); }
+function privateTitle191(n){ const h=hymnPrivate191(n); return String(h?.title || ''); }
+function harpaReady191(){ return Array.from({length:640},(_,i)=>i+1).every(n=>lyric191(n).trim().length>0); }
 function lyricHtml191(text){
   if(!text)return '<div class="v191-no-lyric">Letra não encontrada neste arquivo pessoal.</div>';
   return text.split(/\n\s*\n/).map((stanza,idx)=>`<div class="v191-stanza" data-stanza="${idx+1}">${stanza.split('\n').filter(Boolean).map(line=>`<div>${esc18(line)}</div>`).join('')}</div>`).join('');
 }
 function hymnSearchMatch191(h,q){
   if(!q)return true;
-  const n=norm18(q), l=norm18(lyric191(h.n));
-  return String(h.n).includes(q.trim()) || norm18(h.title).includes(n) || l.includes(n);
+  const n=norm18(q), l=norm18(lyric191(h.n)), pt=norm18(privateTitle191(h.n));
+  return String(h.n).includes(q.trim()) || norm18(h.title).includes(n) || pt.includes(n) || l.includes(n);
 }
 
 harpa18 = function(){
@@ -35,10 +46,10 @@ harpa18 = function(){
 hymnDetail18 = function(){
   const h=harpaCatalogV18.find(x=>x.n===Number(state.hymn))||harpaCatalogV18[0];
   if(!h)return harpa18();
-  const lyrics=lyric191(h.n), font=Math.max(90,Math.min(135,state.harpaFont191));
+  const privateH=hymnPrivate191(h.n), lyrics=lyric191(h.n), title=privateH?.title||h.title, font=Math.max(90,Math.min(135,state.harpaFont191));
   state.lastHymn191=h.n; saveHarpa191();
   return `<div class="pagehead"><button class="back" data-route="harpa">‹</button><div><h1>Hino ${h.n}</h1><p>Harpa Cristã • leitura offline</p></div></div>
-  <section class="v191-hymn-head"><div class="v191-hymn-number">${h.n}</div><div><span>HARPA CRISTÃ</span><h1>${esc18(h.title)}</h1><small>Arquivo pessoal • uso particular</small></div></section>
+  <section class="v191-hymn-head"><div class="v191-hymn-number">${h.n}</div><div><span>HARPA CRISTÃ</span><h1>${esc18(title)}</h1><small>Arquivo pessoal • uso particular</small></div></section>
   <div class="v191-hymn-toolbar"><button id="prevHymn191" ${h.n<=1?'disabled':''}>‹ Anterior</button><button id="favHymn18">${isHymnFav18(h.n)?'❤️ Favorito':'🤍 Favoritar'}</button><button id="nextHymn191" ${h.n>=640?'disabled':''}>Próximo ›</button></div>
   <div class="v191-reading-tools"><button id="harpaFontDown191">A−</button><span>${font}%</span><button id="harpaFontUp191">A+</button><button id="copyHymn191">📋 Copiar</button></div>
   <article class="v191-lyrics" style="--harpa-font:${font}%">${lyricHtml191(lyrics)}</article>
@@ -89,8 +100,8 @@ function bindV191(){
   $('#harpaFontDown191')?.addEventListener('click',()=>{state.harpaFont191=Math.max(90,state.harpaFont191-5);saveHarpa191();window.render();});
   $('#harpaFontUp191')?.addEventListener('click',()=>{state.harpaFont191=Math.min(135,state.harpaFont191+5);saveHarpa191();window.render();});
   $('#copyHymn191')?.addEventListener('click',()=>{
-    const h=harpaCatalogV18.find(x=>x.n===Number(state.hymn));
-    if(h)copy18(`Harpa Cristã ${h.n} — ${h.title}\n\n${lyric191(h.n)}`);
+    const h=harpaCatalogV18.find(x=>x.n===Number(state.hymn)), p=hymnPrivate191(state.hymn);
+    if(h)copy18(`Harpa Cristã ${h.n} — ${p?.title||h.title}\n\n${lyric191(h.n)}`);
   });
   const menuHarpa=[...document.querySelectorAll('.menu-item')].find(x=>x.dataset.route==='harpa');
   if(menuHarpa){const s=menuHarpa.querySelector('small');if(s)s.textContent='640 hinos com letras';}
