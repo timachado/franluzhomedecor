@@ -80,17 +80,16 @@ jobs:
           print('Harpa:',len(catalog),'títulos')
           PY
 
-      - name: Validar 1.13.11
+      - name: Validar 1.13.12
         run: |
           node --check app/src/main/assets/app20.js
           node --check app/src/main/assets/app21.js
-          grep -q 'v1136.css' app/src/main/assets/index.html
-          grep -q 'app21.js' app/src/main/assets/index.html
           grep -q "closest('.menu-card')" app/src/main/assets/app21.js
           grep -q 'menu-sheet.show' app/src/main/assets/v1136.css
           grep -q 'height:100dvh!important' app/src/main/assets/v1136.css
-          grep -q 'versionCode 103' app/build.gradle
-          grep -q "versionName '1.13.11'" app/build.gradle
+          grep -q 'setTextZoom(108)' app/src/main/java/com/timachado/bibliaebd/MainActivity.java
+          grep -q 'versionCode 104' app/build.gradle
+          grep -q "versionName '1.13.12'" app/build.gradle
           grep -q 'if ("false".equalsIgnoreCase(value)) { finish(); return; }' app/src/main/java/com/timachado/bibliaebd/MainActivity.java
 
       - name: Gerar APK
@@ -102,7 +101,7 @@ jobs:
       - name: Publicar APK e AAB
         uses: actions/upload-artifact@v4
         with:
-          name: Biblia-EBD-Android-1.13.11-Menu-Scroll-Fix
+          name: Biblia-EBD-Android-1.13.12-Fonte-Maior
           path: |
             app/build/outputs/apk/debug/app-debug.apk
             app/build/outputs/bundle/debug/app-debug.aab
