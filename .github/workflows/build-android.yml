@@ -12,31 +12,131 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
+
       - name: Android SDK
         uses: android-actions/setup-android@v3
+
       - name: Instalar API 36
         run: sdkmanager "platforms;android-36" "build-tools;35.0.0"
+
       - name: Gradle 8.13
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.13'
-      - name: Preparar versão 1.7.0
+
+      - name: Montar Bíblia completa e catálogo da Harpa
+        shell: bash
         run: |
-          sed -i "s/versionCode 5/versionCode 11/" app/build.gradle
-          sed -i "s/versionName '1.1.1'/versionName '1.7.0'/" app/build.gradle
+          set -euo pipefail
+          rm -rf /tmp/pd-text-corpus
+          git init -q /tmp/pd-text-corpus
+          git -C /tmp/pd-text-corpus remote add origin https://github.com/sangchy1972/pd-text-corpus.git
+          git -C /tmp/pd-text-corpus config core.sparseCheckout true
+          printf 'bibles/pt/\n' > /tmp/pd-text-corpus/.git/info/sparse-checkout
+          git -C /tmp/pd-text-corpus fetch -q --depth 1 origin e9df0306d76c8b1bf66aae71fc6e93ed8622c8cc
+          git -C /tmp/pd-text-corpus checkout -q FETCH_HEAD
+
+          curl -L --fail --retry 3 -sS \
+            https://raw.githubusercontent.com/manda-vai/harpa-crista-digital/752321d683b1450430ea5d8137819b1ba3901a92/src/data/harpa_crista_640_hinos.json \
+            -o /tmp/harpa.json
+
+          python3 - <<'PY'
+          import json, os, re, hashlib
+
+          root='/tmp/pd-text-corpus/bibles/pt'
+          with open(os.path.join(root,'index.json'),encoding='utf-8') as f:
+              meta=json.load(f)
+
+          pt_names=[
+            'Gênesis','Êxodo','Levítico','Números','Deuteronômio','Josué','Juízes','Rute','1 Samuel','2 Samuel','1 Reis','2 Reis','1 Crônicas','2 Crônicas','Esdras','Neemias','Ester','Jó','Salmos','Provérbios','Eclesiastes','Cânticos','Isaías','Jeremias','Lamentações','Ezequiel','Daniel','Oseias','Joel','Amós','Obadias','Jonas','Miqueias','Naum','Habacuque','Sofonias','Ageu','Zacarias','Malaquias','Mateus','Marcos','Lucas','João','Atos','Romanos','1 Coríntios','2 Coríntios','Gálatas','Efésios','Filipenses','Colossenses','1 Tessalonicenses','2 Tessalonicenses','1 Timóteo','2 Timóteo','Tito','Filemom','Hebreus','Tiago','1 Pedro','2 Pedro','1 João','2 João','3 João','Judas','Apocalipse'
+          ]
+          assert len(meta['books']) == 66 and len(pt_names) == 66
+          books=[]
+          verse_count=0
+          chapter_count=0
+          for src,name in zip(meta['books'],pt_names):
+              chapters=[]
+              for c in range(1,src['chapters']+1):
+                  path=os.path.join(root,'books',src['slug'],'chapters',f'{c}.json')
+                  with open(path,encoding='utf-8') as f:
+                      ch=json.load(f)
+                  verses=[v['text'].strip() for v in ch['verses']]
+                  assert verses, f'capítulo vazio: {name} {c}'
+                  chapters.append(verses)
+                  verse_count += len(verses)
+                  chapter_count += 1
+              books.append({'name':name,'slug':src['slug'],'chapters':chapters})
+
+          assert chapter_count == 1189, chapter_count
+          assert verse_count == 31098, verse_count
+          bible={
+              'translation':'João Ferreira de Almeida',
+              'license':'Public Domain',
+              'source':'sangchy1972/pd-text-corpus / seven1m/open-bibles',
+              'snapshot':'e9df0306d76c8b1bf66aae71fc6e93ed8622c8cc',
+              'stats':{'books':66,'chapters':chapter_count,'verses':verse_count},
+              'books':books
+          }
+          john=next(b for b in books if b['name']=='João')
+          assert 'Deus amou o mundo' in john['chapters'][2][15]
+          assert books[0]['chapters'][0][0]
+          assert books[-1]['chapters'][21][-1]
+
+          out='app/src/main/assets/bible-data.js'
+          with open(out,'w',encoding='utf-8') as f:
+              f.write('window.BIBLE_DATA_V18=')
+              json.dump(bible,f,ensure_ascii=False,separators=(',',':'))
+              f.write(';\n')
+
+          with open('/tmp/harpa.json',encoding='utf-8') as f:
+              raw=json.load(f)
+          catalog=[]
+          for n in range(1,641):
+              row=raw.get(str(n))
+              assert row and row.get('hino'), f'Hino {n} ausente'
+              title=re.sub(r'^\s*\d+\s*-\s*','',row['hino']).strip()
+              assert title, f'Título vazio {n}'
+              catalog.append({'n':n,'title':title})
+          assert len(catalog)==640
+          with open('app/src/main/assets/harpa-data.js','w',encoding='utf-8') as f:
+              f.write('window.HARPA_CATALOG_V18=')
+              json.dump(catalog,f,ensure_ascii=False,separators=(',',':'))
+              f.write(';\n')
+
+          for path in ['app/src/main/assets/bible-data.js','app/src/main/assets/harpa-data.js']:
+              data=open(path,'rb').read()
+              print(path, len(data), 'bytes', hashlib.sha256(data).hexdigest())
+          print('Bíblia validada:', len(books), 'livros,', chapter_count, 'capítulos,', verse_count, 'versículos')
+          print('Harpa validada:', len(catalog), 'números/títulos')
+          PY
+
+      - name: Validar JavaScript da 1.8.0
+        run: |
+          node --check app/src/main/assets/app9.js
+          node -e "global.window={};require('./app/src/main/assets/bible-data.js');if(window.BIBLE_DATA_V18.stats.books!==66||window.BIBLE_DATA_V18.stats.verses!==31098)process.exit(1);console.log(window.BIBLE_DATA_V18.stats)"
+          node -e "global.window={};require('./app/src/main/assets/harpa-data.js');if(window.HARPA_CATALOG_V18.length!==640)process.exit(1);console.log('Harpa',window.HARPA_CATALOG_V18.length)"
+
+      - name: Preparar versão 1.8.0
+        run: |
+          sed -i "s/versionCode 5/versionCode 12/" app/build.gradle
+          sed -i "s/versionName '1.1.1'/versionName '1.8.0'/" app/build.gradle
+
       - name: Gerar APK
         run: gradle --no-daemon assembleDebug
+
       - name: Gerar AAB de teste
         run: gradle --no-daemon bundleDebug
+
       - name: Publicar APK
         uses: actions/upload-artifact@v4
         with:
-          name: Biblia-EBD-Android-1.7.0-Gestao-EBD
+          name: Biblia-EBD-Android-1.8.0-Biblia-Completa
           path: |
             app/build/outputs/apk/debug/app-debug.apk
             app/build/outputs/bundle/debug/app-debug.aab
