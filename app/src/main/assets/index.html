@@ -17,18 +17,20 @@
 <link rel="stylesheet" href="v110.css">
 <link rel="stylesheet" href="v111.css">
 <link rel="stylesheet" href="v112.css">
+<link rel="stylesheet" href="v113.css">
 </head>
 <body>
 <div class="shell">
 <header class="topbar">
  <div class="brand" data-route="home"><div class="brandmark">✝</div><strong>Bíblia EBD</strong></div>
- <div class="top-actions"><button class="iconbtn" id="bell">🔔</button><button class="iconbtn" id="globalSearchBtn">🔎</button><button class="iconbtn" id="sun">☀️</button><button class="iconbtn" id="menu">☰</button></div>
+ <div class="top-actions"><button class="iconbtn" id="bell" aria-label="Notificações">🔔</button><button class="iconbtn" id="globalSearchBtn" aria-label="Busca">🔎</button><button class="iconbtn" id="sun" aria-label="Tema">☀️</button><button class="iconbtn" id="menu" aria-label="Menu">☰</button></div>
 </header>
 <main class="content" id="app"></main>
-<nav class="bottomnav">
- <button id="backBtn"><span>↩️</span><small>Voltar</small></button>
+<nav class="bottomnav" aria-label="Navegação principal">
  <button data-route="home"><span>🏠</span><small>Início</small></button>
  <button data-route="bible"><span>📖</span><small>Bíblia</small></button>
+ <button data-route="ebd"><span>🎓</span><small>EBD</small></button>
+ <button data-route="search"><span>🔎</span><small>Busca</small></button>
  <button data-route="profile"><span>👤</span><small>Perfil</small></button>
 </nav>
 </div>
@@ -72,4 +74,5 @@
 <script src="app13.js"></script>
 <script src="app14.js"></script>
 <script src="app15.js"></script>
+<script src="app16.js"></script>
 </body></html>
