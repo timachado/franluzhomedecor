@@ -1,4 +1,59 @@
-/* 1.13.6 — rolagem touch controlada pelo app no WebView */
+/* 1.13.6/1.13.7 — rolagem touch controlada + viewport realmente fixo */
 .content{touch-action:none!important;overscroll-behavior:none!important;overflow-y:scroll!important;-webkit-overflow-scrolling:auto!important}
 .topbar,.bottomnav,.topbar button,.bottomnav button{touch-action:manipulation!important}
 .menu-card{touch-action:pan-y!important;overflow-y:auto!important}
+
+/* CORREÇÃO 1.13.7
+   v1133 definia html/body como height:auto!important. Como v1134 não sobrescrevia
+   isso com !important, a grade crescia junto com todo o conteúdo: clientHeight e
+   scrollHeight de .content ficavam iguais e scrollTop nunca podia sair de zero. */
+html,body{
+  width:100%!important;
+  height:100vh!important;
+  height:100dvh!important;
+  min-height:0!important;
+  max-height:100vh!important;
+  max-height:100dvh!important;
+  overflow:hidden!important;
+  overscroll-behavior:none!important;
+}
+body{position:relative!important;margin:0!important}
+.shell{
+  width:100%!important;
+  height:100%!important;
+  min-height:0!important;
+  max-height:100%!important;
+  padding:0!important;
+  margin:0!important;
+  overflow:hidden!important;
+  display:grid!important;
+  grid-template-rows:var(--topH) minmax(0,1fr) var(--navH)!important;
+}
+.topbar{grid-row:1!important;min-height:var(--topH)!important;height:var(--topH)!important}
+.content{
+  grid-row:2!important;
+  width:100%!important;
+  max-width:760px!important;
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  margin:0 auto!important;
+  overflow-y:scroll!important;
+  overflow-x:hidden!important;
+  -webkit-overflow-scrolling:auto!important;
+  overscroll-behavior-y:none!important;
+  touch-action:none!important;
+  scroll-behavior:auto!important;
+  align-self:stretch!important;
+  justify-self:center!important;
+  padding-bottom:24px!important;
+}
+.bottomnav{grid-row:3!important;min-height:var(--navH)!important;height:var(--navH)!important}
+body.v112-focus .shell{grid-template-rows:0 minmax(0,1fr) 0!important}
+body.v112-focus .content{grid-row:2!important;min-height:0!important;height:auto!important;overflow-y:scroll!important;touch-action:none!important;padding-bottom:28px!important}
+body.v112-focus .topbar,body.v112-focus .bottomnav{display:none!important}
+@media(max-width:380px){
+  .bottomnav{height:68px!important;min-height:68px!important}
+  .shell{grid-template-rows:var(--topH) minmax(0,1fr) 68px!important}
+  .content{padding-bottom:22px!important}
+}
