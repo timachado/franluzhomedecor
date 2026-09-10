@@ -1,0 +1,4 @@
+/* 1.13.6 — rolagem touch controlada pelo app no WebView */
+.content{touch-action:none!important;overscroll-behavior:none!important;overflow-y:scroll!important;-webkit-overflow-scrolling:auto!important}
+.topbar,.bottomnav,.topbar button,.bottomnav button{touch-action:manipulation!important}
+.menu-card{touch-action:pan-y!important;overflow-y:auto!important}
