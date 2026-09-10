@@ -99,7 +99,7 @@ jobs:
           node -e "global.window={};require('./app/src/main/assets/harpa-data.js');if(window.HARPA_CATALOG_V18.length!==640)process.exit(1);console.log('Harpa',window.HARPA_CATALOG_V18.length)"
           grep -q 'app20.js' app/src/main/assets/index.html
           grep -q 'v1134.css' app/src/main/assets/index.html
-          grep -q 'overflow-y:auto' app/src/main/assets/v1134.css
+          grep -q 'overflow-y:scroll' app/src/main/assets/v1134.css
           grep -q '__ebdNativeBack112' app/src/main/assets/app20.js
 
       - name: Preparar versão 1.13.4
