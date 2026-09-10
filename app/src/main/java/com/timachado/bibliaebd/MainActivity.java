@@ -82,7 +82,8 @@ public class MainActivity extends Activity {
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
         settings.setSupportZoom(false);
-        settings.setTextZoom(100);
+        // 1.13.12: leve aumento global da tipografia sem ampliar os cards/ícones.
+        settings.setTextZoom(108);
         settings.setUseWideViewPort(true);
         settings.setLoadWithOverviewMode(false);
         settings.setMediaPlaybackRequiresUserGesture(true);
@@ -193,7 +194,7 @@ public class MainActivity extends Activity {
         try {
             return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
         } catch (Exception ignored) {
-            return "1.13.9";
+            return "1.13.12";
         }
     }
 
