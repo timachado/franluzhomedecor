@@ -116,16 +116,17 @@ jobs:
           print('Harpa validada:', len(catalog), 'números/títulos')
           PY
 
-      - name: Validar JavaScript da 1.8.0
+      - name: Validar JavaScript da 1.9.0
         run: |
           node --check app/src/main/assets/app9.js
+          node --check app/src/main/assets/app10.js
           node -e "global.window={};require('./app/src/main/assets/bible-data.js');if(window.BIBLE_DATA_V18.stats.books!==66||window.BIBLE_DATA_V18.stats.verses!==31098)process.exit(1);console.log(window.BIBLE_DATA_V18.stats)"
           node -e "global.window={};require('./app/src/main/assets/harpa-data.js');if(window.HARPA_CATALOG_V18.length!==640)process.exit(1);console.log('Harpa',window.HARPA_CATALOG_V18.length)"
 
-      - name: Preparar versão 1.8.0
+      - name: Preparar versão 1.9.0
         run: |
-          sed -i "s/versionCode 5/versionCode 12/" app/build.gradle
-          sed -i "s/versionName '1.1.1'/versionName '1.8.0'/" app/build.gradle
+          sed -i "s/versionCode 5/versionCode 13/" app/build.gradle
+          sed -i "s/versionName '1.1.1'/versionName '1.9.0'/" app/build.gradle
 
       - name: Gerar APK
         run: gradle --no-daemon assembleDebug
@@ -136,7 +137,7 @@ jobs:
       - name: Publicar APK
         uses: actions/upload-artifact@v4
         with:
-          name: Biblia-EBD-Android-1.8.0-Biblia-Completa
+          name: Biblia-EBD-Android-1.9.0-Biblia-de-Estudo
           path: |
             app/build/outputs/apk/debug/app-debug.apk
             app/build/outputs/bundle/debug/app-debug.aab
