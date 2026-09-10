@@ -80,45 +80,26 @@ jobs:
           print('Harpa:',len(catalog),'títulos')
           PY
 
-      - name: Validar 1.13.10
+      - name: Preparar diagnóstico lado a lado
+        run: |
+          sed -i "s/applicationId 'com.timachado.bibliaebd'/applicationId 'com.timachado.bibliaebd.diag'/" app/build.gradle
+          sed -i 's#<string name="app_name">Bíblia EBD</string>#<string name="app_name">Bíblia EBD Diagnóstico</string>#' app/src/main/res/values/strings.xml
+
+      - name: Validar diagnóstico
         run: |
           node --check app/src/main/assets/app20.js
           node --check app/src/main/assets/app21.js
-          grep -q 'v1136.css' app/src/main/assets/index.html
-          grep -q 'app21.js' app/src/main/assets/index.html
+          grep -q "applicationId 'com.timachado.bibliaebd.diag'" app/build.gradle
+          grep -q 'Bíblia EBD Diagnóstico' app/src/main/res/values/strings.xml
           grep -q 'height:100dvh!important' app/src/main/assets/v1136.css
-          grep -q 'versionCode 102' app/build.gradle
-          grep -q "versionName '1.13.10'" app/build.gradle
           grep -q 'if ("false".equalsIgnoreCase(value)) { finish(); return; }' app/src/main/java/com/timachado/bibliaebd/MainActivity.java
 
-      - name: Gerar APK
+      - name: Gerar APK diagnóstico
         run: gradle --no-daemon assembleDebug
 
-      - name: Gerar AAB de teste
-        run: gradle --no-daemon bundleDebug
-
-      - name: Publicar APK e AAB
+      - name: Publicar APK diagnóstico
         uses: actions/upload-artifact@v4
         with:
-          name: Biblia-EBD-Android-1.13.10-Atualizacao-Limpa
-          path: |
-            app/build/outputs/apk/debug/app-debug.apk
-            app/build/outputs/bundle/debug/app-debug.aab
+          name: Biblia-EBD-Diagnostico-Lado-a-Lado
+          path: app/build/outputs/apk/debug/app-debug.apk
           retention-days: 7
-
-      - name: Preparar ferramentas de assinatura local
-        run: |
-          mkdir -p sign-tools/lib sign-tools/lib64
-          cp "$ANDROID_HOME/build-tools/35.0.0/apksigner" sign-tools/
-          cp "$ANDROID_HOME/build-tools/35.0.0/zipalign" sign-tools/
-          cp "$ANDROID_HOME/build-tools/35.0.0/lib/apksigner.jar" sign-tools/lib/
-          cp "$ANDROID_HOME/build-tools/35.0.0/lib64/libc++.so" sign-tools/lib64/
-          cp app/test-signing.jks sign-tools/test-signing.jks
-          chmod +x sign-tools/apksigner sign-tools/zipalign
-
-      - name: Publicar ferramentas de assinatura
-        uses: actions/upload-artifact@v4
-        with:
-          name: Android-Sign-Tools-35-Temp
-          path: sign-tools
-          retention-days: 1
