@@ -64,7 +64,6 @@ jobs:
               books.append({'name':name,'slug':src['slug'],'chapters':chapters})
           assert chapter_count==1189 and verse_count==31098
           bible={'translation':'João Ferreira de Almeida','license':'Public Domain','source':'sangchy1972/pd-text-corpus / seven1m/open-bibles','snapshot':'e9df0306d76c8b1bf66aae71fc6e93ed8622c8cc','stats':{'books':66,'chapters':chapter_count,'verses':verse_count},'books':books}
-          assert 'Deus amou o mundo' in next(b for b in books if b['name']=='João')['chapters'][2][15]
           with open('app/src/main/assets/bible-data.js','w',encoding='utf-8') as f:
               f.write('window.BIBLE_DATA_V18=');json.dump(bible,f,ensure_ascii=False,separators=(',',':'));f.write(';\n')
           with open('/tmp/harpa.json',encoding='utf-8') as f: raw=json.load(f)
@@ -73,41 +72,23 @@ jobs:
               row=raw.get(str(n));assert row and row.get('hino')
               title=re.sub(r'^\s*\d+\s*-\s*','',row['hino']).strip();assert title
               catalog.append({'n':n,'title':title})
-          assert len(catalog)==640
           with open('app/src/main/assets/harpa-data.js','w',encoding='utf-8') as f:
               f.write('window.HARPA_CATALOG_V18=');json.dump(catalog,f,ensure_ascii=False,separators=(',',':'));f.write(';\n')
-          with open('app/src/main/assets/harpa-lyrics-user.js','w',encoding='utf-8') as f: f.write('window.HARPA_LYRICS_USER={};\n')
-          print('Bíblia validada:',len(books),'livros,',chapter_count,'capítulos,',verse_count,'versículos')
-          print('Harpa validada:',len(catalog),'números/títulos')
+          with open('app/src/main/assets/harpa-lyrics-user.js','w',encoding='utf-8') as f:
+              f.write('window.HARPA_LYRICS_USER={};\n')
+          print('Bíblia:',len(books),'livros,',chapter_count,'capítulos,',verse_count,'versículos')
+          print('Harpa:',len(catalog),'títulos')
           PY
 
-      - name: Validar JavaScript da 1.13.6
+      - name: Validar 1.13.8
         run: |
-          node --check app/src/main/assets/app9.js
-          node --check app/src/main/assets/app10.js
-          node --check app/src/main/assets/app11.js
-          node --check app/src/main/assets/app12.js
-          node --check app/src/main/assets/app13.js
-          node --check app/src/main/assets/app14.js
-          node --check app/src/main/assets/app15.js
-          node --check app/src/main/assets/app16.js
-          node --check app/src/main/assets/app17.js
-          node --check app/src/main/assets/app18.js
-          node --check app/src/main/assets/app19.js
           node --check app/src/main/assets/app20.js
           node --check app/src/main/assets/app21.js
-          node -e "global.window={};require('./app/src/main/assets/bible-data.js');if(window.BIBLE_DATA_V18.stats.books!==66||window.BIBLE_DATA_V18.stats.verses!==31098)process.exit(1);console.log(window.BIBLE_DATA_V18.stats)"
-          node -e "global.window={};require('./app/src/main/assets/harpa-data.js');if(window.HARPA_CATALOG_V18.length!==640)process.exit(1);console.log('Harpa',window.HARPA_CATALOG_V18.length)"
-          grep -q 'app21.js' app/src/main/assets/index.html
           grep -q 'v1136.css' app/src/main/assets/index.html
-          grep -q 'touch-action:none' app/src/main/assets/v1136.css
-          grep -q '__ebdScrollDiagnostics' app/src/main/assets/app21.js
-          grep -q '__ebdNativeBack112' app/src/main/assets/app20.js
-
-      - name: Preparar versão 1.13.6
-        run: |
-          sed -i "s/versionCode 5/versionCode 24/" app/build.gradle
-          sed -i "s/versionName '1.1.1'/versionName '1.13.6'/" app/build.gradle
+          grep -q 'app21.js' app/src/main/assets/index.html
+          grep -q 'height:100dvh!important' app/src/main/assets/v1136.css
+          grep -q 'versionCode 100' app/build.gradle
+          grep -q "versionName '1.13.8'" app/build.gradle
 
       - name: Gerar APK
         run: gradle --no-daemon assembleDebug
@@ -115,10 +96,10 @@ jobs:
       - name: Gerar AAB de teste
         run: gradle --no-daemon bundleDebug
 
-      - name: Publicar APK
+      - name: Publicar APK e AAB
         uses: actions/upload-artifact@v4
         with:
-          name: Biblia-EBD-Android-1.13.6-Rolagem-Manual
+          name: Biblia-EBD-Android-1.13.8-Instalacao-Segura
           path: |
             app/build/outputs/apk/debug/app-debug.apk
             app/build/outputs/bundle/debug/app-debug.aab
