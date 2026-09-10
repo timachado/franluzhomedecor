@@ -1,7 +1,8 @@
 // 1.13.4 — navegação interna determinística + rolagem no painel de conteúdo.
 (function(){
   const originalNav1134=window.nav;
-  let routeStack1134=[(window.state&&state.route)||'home'];
+  const hasState1134=()=>typeof state!=='undefined';
+  let routeStack1134=[hasState1134()?(state.route||'home'):'home'];
   let lastHomeBack1134=0;
 
   function content1134(){return document.querySelector('.content')}
@@ -20,7 +21,7 @@
     return map[r]||'home';
   }
   function syncStack1134(){
-    if(!window.state)return;
+    if(!hasState1134())return;
     const r=state.route||'home';
     if(routeStack1134[routeStack1134.length-1]!==r)routeStack1134.push(r);
     if(routeStack1134.length>40)routeStack1134=routeStack1134.slice(-30);
@@ -32,7 +33,7 @@
       if(routeStack1134[routeStack1134.length-1]!==route)routeStack1134.push(route);
     }
     if(typeof originalNav1134==='function')originalNav1134(route);
-    else{
+    else if(hasState1134()){
       state.route=route;
       location.hash='#/'+route;
       if(typeof window.render==='function')window.render();
@@ -45,7 +46,7 @@
   window.nav=function(route){go1134(route,true)};
 
   function back1134(){
-    if(window.state&&state.focus112){
+    if(hasState1134()&&state.focus112){
       state.focus112=false;
       try{applyUi112()}catch(e){}
       if(typeof window.render==='function')window.render();
@@ -53,7 +54,7 @@
     }
     const sheet=document.getElementById('menuSheet');
     if(sheet&&sheet.classList.contains('show')){closeMenu1134();return true;}
-    const current=(window.state&&state.route)||'home';
+    const current=hasState1134()?(state.route||'home'):'home';
     if(current!=='home'){
       syncStack1134();
       while(routeStack1134.length&&routeStack1134[routeStack1134.length-1]===current)routeStack1134.pop();
@@ -78,14 +79,17 @@
     bindBackButtons1134();
     requestAnimationFrame(()=>{
       const c=content1134();
-      if(c){c.style.overflowY='auto';c.style.touchAction='pan-y'}
+      if(c){c.style.overflowY='auto';c.style.touchAction='manipulation'}
     });
   };
   const oldBind1134=window.bind;
   window.bind=function(){oldBind1134();bindBackButtons1134()};
 
   window.addEventListener('hashchange',()=>{
-    if(window.state){state.route=location.hash.replace('#/','')||'home';syncStack1134()}
+    if(hasState1134()){
+      state.route=location.hash.replace('#/','')||'home';
+      syncStack1134();
+    }
     setTimeout(scrollTop1134,0);
   });
   window.addEventListener('pageshow',()=>{bindBackButtons1134();setTimeout(scrollTop1134,0)});
