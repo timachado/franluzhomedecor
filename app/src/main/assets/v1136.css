@@ -1,12 +1,12 @@
-/* 1.13.6/1.13.7 — rolagem touch controlada + viewport realmente fixo */
+/* 1.13.11 — rolagem touch controlada + viewport fixo + overlay com scroll próprio */
 .content{touch-action:none!important;overscroll-behavior:none!important;overflow-y:scroll!important;-webkit-overflow-scrolling:auto!important}
 .topbar,.bottomnav,.topbar button,.bottomnav button{touch-action:manipulation!important}
-.menu-card{touch-action:pan-y!important;overflow-y:auto!important}
+.menu-sheet.show{touch-action:none!important;overscroll-behavior:none!important}
+.menu-card{touch-action:none!important;overflow-y:scroll!important;overscroll-behavior:contain!important;-webkit-overflow-scrolling:auto!important}
+.content[data-scroll-locked]{overscroll-behavior:none!important}
 
-/* CORREÇÃO 1.13.7
-   v1133 definia html/body como height:auto!important. Como v1134 não sobrescrevia
-   isso com !important, a grade crescia junto com todo o conteúdo: clientHeight e
-   scrollHeight de .content ficavam iguais e scrollTop nunca podia sair de zero. */
+/* CORREÇÃO DE VIEWPORT
+   html/body ficam presos ao viewport e somente .content rola. */
 html,body{
   width:100%!important;
   height:100vh!important;
