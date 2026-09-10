@@ -1,4 +1,4 @@
-// 1.13.3 — restaura os controles do cabeçalho independentemente dos binds legados.
+// 1.13.3 — restaura controles do cabeçalho e a sincronização de navegação.
 (function(){
   function byId(id){return document.getElementById(id)}
   function openMenu1133(){const s=byId('menuSheet');if(s)s.classList.add('show')}
@@ -39,7 +39,17 @@
     bindHeader1133();
   };
 
-  window.addEventListener('pageshow',bindHeader1133);
+  function syncHash1133(){
+    const route=location.hash.replace('#/','')||'home';
+    if(state.route!==route){
+      state.route=route;
+      window.render();
+      try{window.scrollTo({top:0,left:0,behavior:'auto'})}catch(e){window.scrollTo(0,0)}
+    }
+  }
+
+  window.addEventListener('hashchange',syncHash1133);
+  window.addEventListener('pageshow',()=>{bindHeader1133();syncHash1133()});
   document.addEventListener('DOMContentLoaded',bindHeader1133);
   setTimeout(bindHeader1133,0);
 })();
