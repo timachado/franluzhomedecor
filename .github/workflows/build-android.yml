@@ -80,15 +80,16 @@ jobs:
           print('Harpa:',len(catalog),'títulos')
           PY
 
-      - name: Validar 1.13.8
+      - name: Validar 1.13.9
         run: |
           node --check app/src/main/assets/app20.js
           node --check app/src/main/assets/app21.js
           grep -q 'v1136.css' app/src/main/assets/index.html
           grep -q 'app21.js' app/src/main/assets/index.html
           grep -q 'height:100dvh!important' app/src/main/assets/v1136.css
-          grep -q 'versionCode 100' app/build.gradle
-          grep -q "versionName '1.13.8'" app/build.gradle
+          grep -q 'versionCode 101' app/build.gradle
+          grep -q "versionName '1.13.9'" app/build.gradle
+          grep -q 'if ("false".equalsIgnoreCase(value)) { finish(); return; }' app/src/main/java/com/timachado/bibliaebd/MainActivity.java
 
       - name: Gerar APK
         run: gradle --no-daemon assembleDebug
@@ -99,7 +100,7 @@ jobs:
       - name: Publicar APK e AAB
         uses: actions/upload-artifact@v4
         with:
-          name: Biblia-EBD-Android-1.13.8-Instalacao-Segura
+          name: Biblia-EBD-Android-1.13.9-Voltar-Nativo
           path: |
             app/build/outputs/apk/debug/app-debug.apk
             app/build/outputs/bundle/debug/app-debug.aab
