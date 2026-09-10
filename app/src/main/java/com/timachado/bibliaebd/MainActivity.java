@@ -99,13 +99,6 @@ public class MainActivity extends Activity {
         else if (webView.restoreState(savedInstanceState) == null) webView.loadUrl("file:///android_asset/index.html");
 
         root.postDelayed(this::hideSplash, 1800);
-
-        if (Build.VERSION.SDK_INT >= 33) {
-            getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
-                    android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT,
-                    this::handleBack
-            );
-        }
     }
 
     private View createSplash() {
@@ -175,7 +168,7 @@ public class MainActivity extends Activity {
         try {
             return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
         } catch (Exception ignored) {
-            return "1.12.0";
+            return "1.13.2";
         }
     }
 
@@ -209,7 +202,7 @@ public class MainActivity extends Activity {
     }
 
     @Override protected void onSaveInstanceState(Bundle outState) { if (webView != null) webView.saveState(outState); super.onSaveInstanceState(outState); }
-    @Override @SuppressWarnings("deprecation") public void onBackPressed() { if (Build.VERSION.SDK_INT < 33) handleBack(); else super.onBackPressed(); }
+    @Override @SuppressWarnings("deprecation") public void onBackPressed() { handleBack(); }
     @Override protected void onPause() { super.onPause(); }
     @Override protected void onResume() { super.onResume(); if (root != null) root.requestApplyInsets(); }
     @Override protected void onDestroy() { if (webView != null) { webView.removeJavascriptInterface("AndroidBridge"); webView.stopLoading(); webView.loadUrl("about:blank"); webView.destroy(); webView = null; } super.onDestroy(); }
