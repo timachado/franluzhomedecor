@@ -124,17 +124,57 @@ jobs:
           grep -q 'return "1.14.1";' app/src/main/java/com/timachado/bibliaebd/MainActivity.java
           grep -q 'if ("false".equalsIgnoreCase(value)) { finish(); return; }' app/src/main/java/com/timachado/bibliaebd/MainActivity.java
 
-      - name: Gerar APK de estabilização
+      - name: Gerar APK principal técnico
         run: gradle --no-daemon assembleDebug
 
-      - name: Gerar AAB de teste
+      - name: Gerar AAB técnico
         run: gradle --no-daemon bundleDebug
 
-      - name: Publicar artefatos internos
+      - name: Guardar artefatos técnicos
+        shell: bash
+        run: |
+          mkdir -p /tmp/biblia-main
+          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-main/Biblia-EBD-1.14.1-Estabilizacao-Tecnica.apk
+          cp app/build/outputs/bundle/debug/app-debug.aab /tmp/biblia-main/Biblia-EBD-1.14.1-Estabilizacao-Tecnica.aab
+
+      - name: Preparar Diagnóstico lado a lado
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('app/build.gradle')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace("applicationId 'com.timachado.bibliaebd'","applicationId 'com.timachado.bibliaebd.diag'",1)
+          if "applicationId 'com.timachado.bibliaebd.diag'" not in s:
+              raise SystemExit('Falha ao preparar applicationId diagnóstico')
+          p.write_text(s,encoding='utf-8')
+          r=Path('app/src/main/res/values/strings.xml')
+          x=r.read_text(encoding='utf-8').replace('>Bíblia EBD<','>Bíblia EBD Diagnóstico<',1)
+          r.write_text(x,encoding='utf-8')
+          PY
+          grep -q "applicationId 'com.timachado.bibliaebd.diag'" app/build.gradle
+          grep -q 'Bíblia EBD Diagnóstico' app/src/main/res/values/strings.xml
+
+      - name: Gerar APK Diagnóstico 1.14.1
+        run: gradle --no-daemon clean assembleDebug
+
+      - name: Guardar Diagnóstico
+        shell: bash
+        run: |
+          mkdir -p /tmp/biblia-diag
+          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.14.1-Estabilizacao.apk
+
+      - name: Publicar artefatos técnicos internos
         uses: actions/upload-artifact@v4
         with:
-          name: Biblia-EBD-Android-1.14.1-Estabilizacao
-          path: |
-            app/build/outputs/apk/debug/app-debug.apk
-            app/build/outputs/bundle/debug/app-debug.aab
+          name: Biblia-EBD-Android-1.14.1-Estabilizacao-Tecnica
+          path: /tmp/biblia-main/*
+          retention-days: 14
+
+      - name: Publicar Diagnóstico instalável lado a lado
+        uses: actions/upload-artifact@v4
+        with:
+          name: Biblia-EBD-Diagnostico-1.14.1-Estabilizacao
+          path: /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.14.1-Estabilizacao.apk
           retention-days: 14
