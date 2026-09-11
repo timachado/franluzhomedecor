@@ -4,7 +4,7 @@ Este arquivo acompanha somente a linha Android `build-biblia-ebd-temp`. A branch
 
 ## Meta
 
-Chegar a uma versão estável somente depois de passar pelos gates abaixo, preservando dados locais entre atualizações.
+Chegar a uma versão estável somente depois de passar pelos gates abaixo, preservando dados locais entre atualizações. Publicação em loja fica fora deste ciclo.
 
 ## 1.14.1 — Integridade e inicialização
 
@@ -14,15 +14,20 @@ Chegar a uma versão estável somente depois de passar pelos gates abaixo, prese
 - [x] Carregar camada de estabilização antes de `app1.js`.
 - [x] Isolar JSON local corrompido sem derrubar a inicialização.
 - [x] Guardar diagnóstico do último erro JavaScript.
-- [ ] Testar atualização por cima da versão já instalada, sem desinstalar.
+- [x] Criar variante Diagnóstico com pacote separado para testes sem tocar no app principal.
 - [ ] Confirmar Home, Bíblia, EBD, Harpa, Busca, Perfil e menu no aparelho.
 
 ## 1.14.2 — Backup e recuperação
 
-- [ ] Validar exportação JSON com favoritos, notas, marca-textos, histórico, progresso e configurações.
-- [ ] Validar restauração em instalação de teste.
-- [ ] Impedir que backup inválido sobrescreva dados bons.
-- [ ] Exibir resumo do que será restaurado antes de aplicar.
+- [x] Gerar backup completo das chaves locais `ebd-*`, cobrindo favoritos, notas, marca-textos, histórico, progresso, EBD, perfil e configurações.
+- [x] Manter compatibilidade de leitura com o formato de backup anterior.
+- [x] Validar estrutura, chaves, tipos, JSON interno e tamanho antes de restaurar.
+- [x] Impedir que backup inválido seja aplicado.
+- [x] Exibir resumo do backup antes de qualquer restauração.
+- [x] Restaurar apenas as chaves presentes no backup, sem apagar dados atuais ausentes nele.
+- [x] Criar ponto automático de retorno antes da restauração.
+- [x] Reverter alterações se uma gravação falhar no meio da restauração.
+- [ ] Validar geração, análise e restauração em aparelho usando a variante Diagnóstico.
 - [ ] Validar persistência após fechar e reabrir o aplicativo.
 
 ## 1.14.3 — Regressão dos recursos
@@ -54,4 +59,4 @@ Uma build RC só será criada quando todos os testes de regressão acima estiver
 
 ## Versão estável
 
-A versão estável final será promovida somente depois de teste real em aparelho, atualização por cima da linha anterior e validação do backup/restauração. Publicação em loja é uma decisão separada e não faz parte deste ciclo de estabilização.
+A versão estável final será promovida somente depois de teste real em aparelho, validação do backup/restauração e definição segura da assinatura usada para atualizar a instalação principal. Publicação em loja é uma decisão separada e permanece pausada.
