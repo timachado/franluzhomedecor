@@ -9,7 +9,7 @@
   const AI_ACCESS_KEY_115='biblia-ai-access-v115'; // fora do backup ebd-* de propósito
   const MAX_HISTORY_115=18;
 
-  state.ai115=Object.assign({action:'ask',question:'',busy:false,context:null},state.ai115||{});
+  state.ai115=Object.assign({action:'ask',question:'',busy:false,context:null,serverChecked:false,serverConfigured:null,serverOnline:null},state.ai115||{});
   state.aiHistory115=safeJson115(localStorage.getItem(AI_HISTORY_KEY_115),[]);
   if(!Array.isArray(state.aiHistory115))state.aiHistory115=[];
 
@@ -36,6 +36,17 @@
     }catch(_){}
     return null;
   }
+  function currentStudyVerseContext115(){
+    try{
+      const v=Number(state.studyVerseV19||0);
+      if(!v||!state.book||!state.chapter||typeof chapterVerses18!=='function')return null;
+      const verses=chapterVerses18(state.book,state.chapter)||[];
+      const text=verses[v-1]||'';
+      if(!text)return null;
+      const ref=`${state.book} ${state.chapter}:${v}`;
+      return {kind:'bible-verse',title:ref,reference:ref,text:`${ref} ${text}`};
+    }catch(_){return null}
+  }
   function currentBibleContext115(){
     try{
       if(!state.book||!state.chapter||typeof chapterVerses18!=='function')return null;
@@ -44,14 +55,16 @@
       const selected=Array.isArray(state.selectedVersesV19)?state.selectedVersesV19:[];
       if(selected.length){
         const rows=selected.slice(0,30).map(v=>`${state.book} ${state.chapter}:${v} ${verses[Number(v)-1]||''}`);
-        return {kind:'bible-selection',title:`${state.book} ${state.chapter} • ${rows.length} versículo(s)`,reference:`${state.book} ${state.chapter}`,text:rows.join('\n')};
+        const first=Number(selected[0]),last=Number(selected[selected.length-1]);
+        const ref=selected.length===1?`${state.book} ${state.chapter}:${first}`:`${state.book} ${state.chapter}:${first}-${last}`;
+        return {kind:'bible-selection',title:`${ref} • ${rows.length} versículo(s)`,reference:ref,text:rows.join('\n')};
       }
       const rows=verses.map((t,i)=>`${i+1}. ${t}`);
       return {kind:'bible-chapter',title:`${state.book} ${state.chapter}`,reference:`${state.book} ${state.chapter}`,text:rows.join('\n')};
     }catch(_){return null}
   }
   function contextFromRoute115(){
-    if(state.route==='reader')return currentBibleContext115();
+    if(state.route==='reader')return currentStudyVerseContext115()||currentBibleContext115();
     if(state.route==='ebd'||state.route==='lesson'||state.route==='classroom'||state.route==='attendance'||state.route==='agenda')return currentLessonContext115();
     return state.ai115.context||null;
   }
@@ -69,6 +82,26 @@
     if(a==='ebd')return `Prepare um roteiro de aula EBD baseado em ${ref}, com objetivos, perguntas, dinâmica simples e aplicação.`;
     return '';
   }
+  function serverStatus115(){
+    if(state.ai115.serverOnline===false)return '<span class="ai115-server bad">● Servidor indisponível</span>';
+    if(state.ai115.serverConfigured===true)return '<span class="ai115-server ok">● IA configurada no servidor</span>';
+    if(state.ai115.serverConfigured===false)return '<span class="ai115-server warn">● Servidor ativo • credenciais pendentes</span>';
+    return '<span class="ai115-server">● Verificando servidor…</span>';
+  }
+  async function checkServer115(){
+    if(state.ai115.serverChecked)return;
+    state.ai115.serverChecked=true;
+    try{
+      const controller=new AbortController();
+      const timer=setTimeout(()=>controller.abort(),8000);
+      const res=await fetch(AI_ENDPOINT_115,{method:'GET',signal:controller.signal});
+      clearTimeout(timer);
+      const data=await res.json().catch(()=>({}));
+      state.ai115.serverOnline=!!res.ok;
+      state.ai115.serverConfigured=!!data.configured;
+    }catch(_){state.ai115.serverOnline=false;state.ai115.serverConfigured=false}
+    if(state.route==='ai115')window.render();
+  }
   function contextCard115(c){
     if(!c)return `<section class="ai115-context emptyctx"><span>📎</span><div><strong>Sem contexto anexado</strong><small>Você pode perguntar por tema ou abrir a IA a partir da Bíblia/EBD.</small></div></section>`;
     return `<section class="ai115-context"><span>${c.kind==='ebd'?'🎓':'📖'}</span><div><small>CONTEXTO ENVIADO SOMENTE AO TOCAR EM PERGUNTAR</small><strong>${esc115(c.title||c.reference||'Contexto bíblico')}</strong><p>${esc115((c.text||'').slice(0,220))}${(c.text||'').length>220?'…':''}</p></div><button id="clearAiContext115">✕</button></section>`;
@@ -83,11 +116,11 @@
     const hasAccess=!!aiAccess115();
     const hist=state.aiHistory115;
     return `<div class="pagehead"><button class="back" data-back>‹</button><div><h1>Assistente Bíblia EBD</h1><p>IA para estudo, EBD e preparação de esboços.</p></div></div>
-      <section class="ai115-hero"><div class="ai115-orb">✦</div><div><span>ASSISTENTE IA • ONLINE OPCIONAL</span><h2>Estude com contexto, não no escuro</h2><p>A Bíblia do aplicativo fornece o texto de contexto. A resposta da IA é interpretação/apoio de estudo e nunca substitui o texto bíblico.</p></div></section>
+      <section class="ai115-hero"><div class="ai115-orb">✦</div><div><span>ASSISTENTE IA • ONLINE OPCIONAL</span><h2>Estude com contexto, não no escuro</h2><p>A Bíblia do aplicativo fornece o texto de contexto. A resposta da IA é interpretação/apoio de estudo e nunca substitui o texto bíblico.</p>${serverStatus115()}</div></section>
       <div class="ai115-actions">${[['ask','💬','Perguntar'],['explain','🔎','Explicar'],['summary','🧾','Resumir'],['context','🏛️','Contexto'],['outline','🗂️','Esboço'],['ebd','🎓','EBD']].map(([a,ic,t])=>`<button data-ai-action115="${a}" class="${state.ai115.action===a?'active':''}"><span>${ic}</span>${t}</button>`).join('')}</div>
       ${contextCard115(c)}
-      <section class="ai115-compose"><div class="ai115-mode"><span>${role115()==='Professor'?'🧑‍🏫':'👤'}</span><strong>Modo ${esc115(role115())}</strong><small>${hasAccess?'Servidor conectado por código privado':'Informe o código privado para ativar chamadas reais'}</small></div>
-        ${!hasAccess?`<div class="ai115-access"><label>Código privado da IA</label><div><input class="field" id="aiAccess115" type="password" autocomplete="off" placeholder="Código configurado no servidor"><button class="btn btn-dark" id="saveAiAccess115">Salvar</button></div><small>O código fica somente neste aparelho e não entra no backup do Bíblia EBD.</small></div>`:''}
+      <section class="ai115-compose"><div class="ai115-mode"><span>${role115()==='Professor'?'🧑‍🏫':'👤'}</span><strong>Modo ${esc115(role115())}</strong><small>${hasAccess?'Código privado salvo neste aparelho':'Informe o código privado para ativar chamadas reais'}</small></div>
+        ${!hasAccess?`<div class="ai115-access"><label>Código privado da IA</label><div><input class="field" id="aiAccess115" type="password" autocomplete="off" placeholder="Código configurado no servidor"><button class="btn btn-dark" id="saveAiAccess115">Salvar</button></div><small>O código fica somente neste aparelho e não entra no backup do Bíblia EBD.</small></div>`:`<button class="ai115-forget-access" id="forgetAiAccess115">Esquecer código privado deste aparelho</button>`}
         <label>${esc115(actionLabel115(state.ai115.action))}</label><textarea class="field ai115-question" id="aiQuestion115" placeholder="${esc115(actionPlaceholder115(state.ai115.action))}">${esc115(state.ai115.question||defaultQuestion115(state.ai115.action,c))}</textarea>
         <div class="ai115-send-row"><span>🔒 Nada é enviado automaticamente.</span><button class="btn btn-primary" id="sendAi115" ${state.ai115.busy?'disabled':''}>${state.ai115.busy?'Pensando…':'✦ Perguntar à IA'}</button></div>
       </section>
@@ -106,30 +139,32 @@
     const userMsg={role:'user',text:question,at:Date.now()};
     state.aiHistory115.push(userMsg);saveHistory115();
     state.ai115.busy=true;state.ai115.question='';window.render();
+    let timer=null;
     try{
       const controller=new AbortController();
-      const timer=setTimeout(()=>controller.abort(),45000);
+      timer=setTimeout(()=>controller.abort(),45000);
       const res=await fetch(AI_ENDPOINT_115,{method:'POST',headers:{'Content-Type':'application/json','x-biblia-access':access},body:JSON.stringify({action:state.ai115.action,question,mode:role115(),context:context?{kind:context.kind,title:context.title,reference:context.reference,text:String(context.text||'').slice(0,16000)}:null}),signal:controller.signal});
-      clearTimeout(timer);
+      clearTimeout(timer);timer=null;
       let data={};try{data=await res.json()}catch(_){}
       if(!res.ok)throw new Error(data?.message||data?.error||`Falha do servidor (${res.status})`);
       const answer=String(data.answer||'').trim();
       if(!answer)throw new Error('A IA não retornou texto.');
+      state.ai115.serverOnline=true;state.ai115.serverConfigured=true;
       state.aiHistory115.push({role:'assistant',text:answer,at:Date.now(),model:data.model||''});
       saveHistory115();
     }catch(err){
       const msg=err?.name==='AbortError'?'A IA demorou demais para responder. Tente novamente.':(err?.message||'Não foi possível conectar ao Assistente IA.');
       state.aiHistory115.push({role:'assistant',text:`⚠️ ${msg}`,at:Date.now(),error:true});saveHistory115();
-    }finally{state.ai115.busy=false;window.render()}
+    }finally{if(timer)clearTimeout(timer);state.ai115.busy=false;window.render()}
   }
   function saveAiNote115(index){
-    const m=state.aiHistory115[Number(index)];if(!m||m.role!=='assistant')return;
+    const m=state.aiHistory115[Number(index)];if(!m||m.role!=='assistant'||m.error)return;
     const ref=state.ai115.context?.reference||'Estudo com IA';
     const note={t:`IA • ${ref}`,x:m.text};
     if(Array.isArray(state.notes)){state.notes.unshift(note);try{if(typeof save==='function')save()}catch(_){}toast115('Resposta salva nas anotações 📝')}
   }
   function copy115(text){
-    if(navigator.clipboard?.writeText)navigator.clipboard.writeText(text).then(()=>toast115('Copiado 📋')).catch(()=>{});
+    if(navigator.clipboard?.writeText)navigator.clipboard.writeText(text).then(()=>toast115('Copiado 📋')).catch(()=>{if(typeof copy18==='function')copy18(text)});
     else if(typeof copy18==='function')copy18(text);
   }
   function share115(text){
@@ -140,6 +175,8 @@
     if(state.route!=='reader')return;
     const tools=document.querySelector('.v19-reader-tools');
     if(tools&&!document.getElementById('openAiReader115'))tools.insertAdjacentHTML('beforeend','<button id="openAiReader115">✦ IA</button>');
+    const study=document.querySelector('.v19-study-actions');
+    if(study&&!document.getElementById('studyVerseAi115'))study.insertAdjacentHTML('beforeend','<button id="studyVerseAi115">✦ IA</button>');
     const bar=document.querySelector('.v19-selection-bar');
     if(bar&&!document.getElementById('studySelectionAi115'))bar.insertAdjacentHTML('beforeend','<button id="studySelectionAi115">✦ IA</button>');
   }
@@ -160,6 +197,7 @@
   }
   function bindInjected115(){
     document.getElementById('openAiReader115')?.addEventListener('click',()=>setContextAndOpen115(currentBibleContext115(),'explain'));
+    document.getElementById('studyVerseAi115')?.addEventListener('click',()=>setContextAndOpen115(currentStudyVerseContext115(),'explain'));
     document.getElementById('studySelectionAi115')?.addEventListener('click',()=>setContextAndOpen115(currentBibleContext115(),'explain'));
     document.getElementById('openAiEbd115')?.addEventListener('click',()=>setContextAndOpen115(currentLessonContext115(),'ebd'));
     document.getElementById('openAiMinistry115')?.addEventListener('click',()=>setContextAndOpen115(null,'ask'));
@@ -169,12 +207,14 @@
     $$('[data-ai-action115]').forEach(b=>b.onclick=()=>{state.ai115.action=b.dataset.aiAction115;state.ai115.question=defaultQuestion115(state.ai115.action,state.ai115.context);window.render()});
     document.getElementById('clearAiContext115')?.addEventListener('click',()=>{state.ai115.context=null;window.render()});
     document.getElementById('saveAiAccess115')?.addEventListener('click',()=>{const v=document.getElementById('aiAccess115')?.value||'';if(!v.trim())return toast115('Digite o código privado.');setAiAccess115(v);toast115('Código salvo somente neste aparelho 🔒');window.render()});
+    document.getElementById('forgetAiAccess115')?.addEventListener('click',()=>{setAiAccess115('');toast115('Código removido deste aparelho.');window.render()});
     document.getElementById('sendAi115')?.addEventListener('click',sendAi115);
     document.getElementById('aiQuestion115')?.addEventListener('input',e=>{state.ai115.question=e.target.value});
     document.getElementById('clearAiHistory115')?.addEventListener('click',()=>{state.aiHistory115=[];saveHistory115();window.render()});
     $$('[data-ai-copy115]').forEach(b=>b.onclick=()=>copy115(state.aiHistory115[Number(b.dataset.aiCopy115)]?.text||''));
     $$('[data-ai-note115]').forEach(b=>b.onclick=()=>saveAiNote115(b.dataset.aiNote115));
     $$('[data-ai-share115]').forEach(b=>b.onclick=()=>share115(state.aiHistory115[Number(b.dataset.aiShare115)]?.text||''));
+    checkServer115();
   }
 
   window.render=function(){
@@ -192,6 +232,7 @@
     endpoint:AI_ENDPOINT_115,
     openWithContext:setContextAndOpen115,
     bibleContext:currentBibleContext115,
+    verseContext:currentStudyVerseContext115,
     lessonContext:currentLessonContext115
   });
 
