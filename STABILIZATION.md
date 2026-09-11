@@ -53,6 +53,9 @@ Chegar a uma versão estável somente depois de completar as funcionalidades pla
 - [x] Reconhecimento automático de referências bíblicas digitadas.
 - [x] Leitura confortável das respostas da IA com A− / A+.
 - [x] Central IA do Professor com duração de aula e público da classe.
+- [x] IA da Turma com planejamento, engajamento, mensagem geral e revisão pós-aula.
+- [x] IA da Chamada com análise somente de dados agregados, sem enviar nomes de alunos.
+- [x] IA da Agenda com checklist, lembrete e planejamento de encontros sem enviar observações livres.
 
 ### Recursos adicionais já previstos
 
@@ -61,7 +64,8 @@ Chegar a uma versão estável somente depois de completar as funcionalidades pla
 - [ ] Melhorar Dicionário Bíblico e Português e conectá-los ao fluxo de estudo.
 - [ ] Melhorar busca unificada e busca por linguagem natural.
 - [x] Ampliar recursos do Professor: perguntas, dinâmica, plano de aula e material de apoio com IA.
-- [ ] Revisar experiência de Minha Turma, chamada, agenda e compartilhamento para classe.
+- [x] Integrar Minha Turma, chamada e agenda à IA preservando dados pessoais.
+- [ ] Melhorar compartilhamento da turma e lembretes sem depender de cadastro online.
 - [ ] Avaliar áudio/leitura em voz alta sem comprometer o modo offline.
 
 ## 1.16.x — Regressão completa dos recursos
@@ -76,7 +80,7 @@ Chegar a uma versão estável somente depois de completar as funcionalidades pla
 - [ ] Minha Turma, chamada e agenda.
 - [ ] Harpa Cristã completa: validar 640/640 no build que inclui as letras.
 - [ ] Dicionário, concordância, esboços, Atlas e Ministério & Estudo.
-- [ ] Assistente IA: contexto, respostas, salvamento, Professor/EBD e tratamento de falhas.
+- [ ] Assistente IA: contexto, respostas, salvamento, Professor/EBD, Turma/Chamada/Agenda e tratamento de falhas.
 - [ ] Modo Púlpito e manter tela ligada.
 - [ ] Aparência, foco, contraste e espaçamento.
 
