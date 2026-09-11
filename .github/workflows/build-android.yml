@@ -1,4 +1,4 @@
-name: Build Bíblia EBD Android — 1.15.8 Áudio e Lembretes
+name: Build Bíblia EBD Android — 1.15.9 Busca Inteligente
 
 on:
   push:
@@ -70,33 +70,31 @@ jobs:
           print('Bíblia', chapters, verses_total, 'Harpa', len(catalog))
           PY
 
-      - name: Validar 1.15.8
+      - name: Validar 1.15.9
         shell: bash
         run: |
           set -euo pipefail
-          for f in stability1141.js app20.js app21.js app22.js app23.js app24.js app25.js app26.js app27.js app28.js app29.js app30.js app31.js app32.js; do node --check "app/src/main/assets/$f"; done
+          for f in stability1141.js app20.js app21.js app22.js app23.js app24.js app25.js app26.js app27.js app28.js app29.js app30.js app31.js app32.js app33.js; do node --check "app/src/main/assets/$f"; done
           python3 - <<'PY'
           from pathlib import Path
           s=Path('app/src/main/assets/index.html').read_text(encoding='utf-8')
-          assert s.index('app31.js') < s.index('app32.js')
-          assert 'v1158.css' in s and 'app32.js' in s
-          a=Path('app/src/main/assets/app32.js').read_text(encoding='utf-8')
-          c=Path('app/src/main/assets/v1158.css').read_text(encoding='utf-8')
-          m=Path('app/src/main/java/com/timachado/bibliaebd/MainActivity.java').read_text(encoding='utf-8')
-          r=Path('app/src/main/java/com/timachado/bibliaebd/ReminderReceiver.java').read_text(encoding='utf-8')
-          manifest=Path('app/src/main/AndroidManifest.xml').read_text(encoding='utf-8')
-          assert '__EBD_NATIVE_1158__' in a
-          assert 'speakBible1158' in a and 'speakHymn1158' in a and 'speakAi1158' in a
-          assert 'scheduleReminder' in a and 'shareClass1158' in a and 'shareAgenda1158' in a
-          assert 'v1158-reminder' in c and 'v1158-share' in c
-          assert 'TextToSpeech' in m and 'speakText' in m and 'scheduleReminder' in m and 'cancelReminder' in m
-          assert 'POST_NOTIFICATIONS' in manifest and 'ReminderReceiver' in manifest
-          assert 'NotificationChannel' in r
-          assert 'return "1.15.8";' in m
-          g=Path('app/build.gradle').read_text(encoding='utf-8')
-          assert 'versionCode 117' in g and "versionName '1.15.8'" in g
+          assert s.index('app32.js') < s.index('app33.js')
+          assert 'v1159.css' in s and 'app33.js' in s
+          a=Path('app/src/main/assets/app33.js').read_text(encoding='utf-8')
+          c=Path('app/src/main/assets/v1159.css').read_text(encoding='utf-8')
+          assert '__EBD_SMART_1159__' in a
+          assert 'BUSCA LOCAL • 31.098 VERSÍCULOS' in a
+          assert 'Dicionário Bíblico + Português' in a
+          assert 'Atlas de estudo offline' in a
+          assert "id:'ansiedade'" in a and "id:'paulo'" in a
+          assert 'buildBibleIndex' in a and 'fullText' in a
+          assert 'Perguntar à IA' in a
+          assert 'v1159-search-hero' in c and 'v1159-place-grid' in c and 'v1159-dict-list' in c
           assert 'OPENAI_API_KEY' not in a
+          g=Path('app/build.gradle').read_text(encoding='utf-8')
+          assert 'versionCode 118' in g and "versionName '1.15.9'" in g
           PY
+          grep -q '__EBD_NATIVE_1158__' app/src/main/assets/app32.js
           grep -q '__EBD_CLASS_AI_1157__' app/src/main/assets/app31.js
           grep -q '__EBD_READER_1155__' app/src/main/assets/app29.js
           grep -q 'font-size:1em!important' app/src/main/assets/v1155.css
@@ -112,8 +110,8 @@ jobs:
         shell: bash
         run: |
           mkdir -p /tmp/biblia-main
-          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-main/Biblia-EBD-1.15.8-Audio-Lembretes-Tecnica.apk
-          cp app/build/outputs/bundle/debug/app-debug.aab /tmp/biblia-main/Biblia-EBD-1.15.8-Audio-Lembretes-Tecnica.aab
+          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-main/Biblia-EBD-1.15.9-Busca-Inteligente-Tecnica.apk
+          cp app/build/outputs/bundle/debug/app-debug.aab /tmp/biblia-main/Biblia-EBD-1.15.9-Busca-Inteligente-Tecnica.aab
 
       - name: Preparar Diagnóstico lado a lado
         shell: bash
@@ -136,29 +134,29 @@ jobs:
           APK=app/build/outputs/apk/debug/app-debug.apk
           AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
           "$AAPT" dump badging "$APK" | tee /tmp/badging.txt
-          grep -q "package: name='com.timachado.bibliaebd.diag' versionCode='117' versionName='1.15.8-teste'" /tmp/badging.txt
+          grep -q "package: name='com.timachado.bibliaebd.diag' versionCode='118' versionName='1.15.9-teste'" /tmp/badging.txt
           grep -q "application-label:'Bíblia EBD Diagnóstico'" /tmp/badging.txt
-          unzip -p "$APK" assets/index.html | grep -q 'app32.js'
-          unzip -p "$APK" assets/app32.js | grep -q 'Lembrete local da EBD'
-          unzip -p "$APK" assets/v1158.css | grep -q 'v1158-reminder'
+          unzip -p "$APK" assets/index.html | grep -q 'app33.js'
+          unzip -p "$APK" assets/app33.js | grep -q 'Busca Inteligente'
+          unzip -p "$APK" assets/v1159.css | grep -q 'v1159-place-grid'
           unzip -p "$APK" assets/harpa-lyrics-user.js | grep -qx 'window.HARPA_LYRICS_USER={};'
 
       - name: Guardar Diagnóstico
         shell: bash
         run: |
           mkdir -p /tmp/biblia-diag
-          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.15.8-Audio-Lembretes.apk
+          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.15.9-Busca-Inteligente.apk
 
       - name: Publicar técnico
         uses: actions/upload-artifact@v4
         with:
-          name: Biblia-EBD-Android-1.15.8-Audio-Lembretes-Tecnica
+          name: Biblia-EBD-Android-1.15.9-Busca-Inteligente-Tecnica
           path: /tmp/biblia-main/*
           retention-days: 14
 
       - name: Publicar Diagnóstico
         uses: actions/upload-artifact@v4
         with:
-          name: Biblia-EBD-Diagnostico-1.15.8-Audio-Lembretes
-          path: /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.15.8-Audio-Lembretes.apk
+          name: Biblia-EBD-Diagnostico-1.15.9-Busca-Inteligente
+          path: /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.15.9-Busca-Inteligente.apk
           retention-days: 14
