@@ -1,4 +1,4 @@
-name: Build Bíblia EBD Android — Estabilização
+name: Build Bíblia EBD Android — 1.15 IA
 
 on:
   push:
@@ -66,7 +66,6 @@ jobs:
           bible={'translation':'João Ferreira de Almeida','license':'Public Domain','source':'sangchy1972/pd-text-corpus / seven1m/open-bibles','snapshot':'e9df0306d76c8b1bf66aae71fc6e93ed8622c8cc','stats':{'books':66,'chapters':chapter_count,'verses':verse_count},'books':books}
           with open('app/src/main/assets/bible-data.js','w',encoding='utf-8') as f:
               f.write('window.BIBLE_DATA_V18='); json.dump(bible,f,ensure_ascii=False,separators=(',',':')); f.write(';\n')
-
           with open('/tmp/harpa.json',encoding='utf-8') as f: raw=json.load(f)
           catalog=[]
           for n in range(1,641):
@@ -75,29 +74,29 @@ jobs:
               catalog.append({'n':n,'title':title})
           with open('app/src/main/assets/harpa-data.js','w',encoding='utf-8') as f:
               f.write('window.HARPA_CATALOG_V18='); json.dump(catalog,f,ensure_ascii=False,separators=(',',':')); f.write(';\n')
-          # Build técnico do GitHub: nunca inclui as letras privadas.
           with open('app/src/main/assets/harpa-lyrics-user.js','w',encoding='utf-8') as f:
               f.write('window.HARPA_LYRICS_USER={};\n')
           print('Bíblia:',len(books),'livros,',chapter_count,'capítulos,',verse_count,'versículos')
           print('Harpa:',len(catalog),'títulos; letras privadas: 0')
           PY
 
-      - name: Preparar versão interna 1.14.2
+      - name: Preparar versão interna 1.15.0
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
+          import re
           from pathlib import Path
           p=Path('app/build.gradle')
           s=p.read_text(encoding='utf-8')
-          s=s.replace('versionCode 105','versionCode 108')
-          s=s.replace("versionName '1.14.0'","versionName '1.14.2'")
-          if 'versionCode 108' not in s or "versionName '1.14.2'" not in s:
-              raise SystemExit('Falha ao preparar numeração 1.14.2 / 108')
+          s=re.sub(r'versionCode\s+\d+','versionCode 109',s,count=1)
+          s=re.sub(r"versionName\s+'[^']+'","versionName '1.15.0'",s,count=1)
+          if 'versionCode 109' not in s or "versionName '1.15.0'" not in s:
+              raise SystemExit('Falha ao preparar 1.15.0 / 109')
           p.write_text(s,encoding='utf-8')
           PY
 
-      - name: Validar 1.14.2 — dados e regressão estrutural
+      - name: Validar 1.15.0 — IA e regressão estrutural
         shell: bash
         run: |
           set -euo pipefail
@@ -106,27 +105,30 @@ jobs:
           node --check app/src/main/assets/app21.js
           node --check app/src/main/assets/app22.js
           node --check app/src/main/assets/app23.js
+          node --check app/src/main/assets/app24.js
           python3 - <<'PY'
           from pathlib import Path
           s=Path('app/src/main/assets/index.html').read_text(encoding='utf-8')
           assert s.index('stability1141.js') < s.index('app1.js')
-          assert s.index('app22.js') < s.index('app23.js')
+          assert s.index('app23.js') < s.index('app24.js')
+          assert 'v115.css' in s
+          assert 'data-route="ai115"' in s
+          ai=Path('app/src/main/assets/app24.js').read_text(encoding='utf-8')
+          assert 'https://dwpcddiramxlhavdmmyn.supabase.co/functions/v1/biblia-ai' in ai
+          assert 'OPENAI_API_KEY' not in ai
+          assert 'Estudar com IA' in ai
+          assert 'Nada é enviado automaticamente' in ai
           PY
           grep -q '__EBD_STABILITY_1141__' app/src/main/assets/stability1141.js
-          grep -q 'ebd-recovery-v1141-' app/src/main/assets/stability1141.js
           grep -q '__EBD_BACKUP_1142__' app/src/main/assets/app23.js
-          grep -q 'biblia-ebd-local-backup' app/src/main/assets/app23.js
-          grep -q 'ebd-auto-backup-before-restore-v1142' app/src/main/assets/app23.js
-          grep -q 'Analisar para restaurar' app/src/main/assets/app23.js
-          grep -q 'Restaurar agora' app/src/main/assets/app23.js
-          grep -q 'ministry114' app/src/main/assets/index.html
+          grep -q '__EBD_AI_115__' app/src/main/assets/app24.js
+          grep -q 'Assistente Bíblia EBD' app/src/main/assets/app24.js
           grep -q 'Modo Púlpito' app/src/main/assets/app22.js
           grep -q 'Atlas Bíblico' app/src/main/assets/app22.js
-          grep -q 'versionCode 108' app/build.gradle
-          grep -q "versionName '1.14.2'" app/build.gradle
+          grep -q 'versionCode 109' app/build.gradle
+          grep -q "versionName '1.15.0'" app/build.gradle
           grep -q 'height:100dvh!important' app/src/main/assets/v1136.css
           grep -q 'setTextZoom(108)' app/src/main/java/com/timachado/bibliaebd/MainActivity.java
-          grep -q 'return "1.14.2";' app/src/main/java/com/timachado/bibliaebd/MainActivity.java
           grep -q 'if ("false".equalsIgnoreCase(value)) { finish(); return; }' app/src/main/java/com/timachado/bibliaebd/MainActivity.java
           grep -qx 'window.HARPA_LYRICS_USER={};' app/src/main/assets/harpa-lyrics-user.js
 
@@ -140,8 +142,8 @@ jobs:
         shell: bash
         run: |
           mkdir -p /tmp/biblia-main
-          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-main/Biblia-EBD-1.14.2-Backup-Seguro-Tecnica.apk
-          cp app/build/outputs/bundle/debug/app-debug.aab /tmp/biblia-main/Biblia-EBD-1.14.2-Backup-Seguro-Tecnica.aab
+          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-main/Biblia-EBD-1.15.0-Assistente-IA-Tecnica.apk
+          cp app/build/outputs/bundle/debug/app-debug.aab /tmp/biblia-main/Biblia-EBD-1.15.0-Assistente-IA-Tecnica.aab
 
       - name: Preparar Diagnóstico lado a lado
         shell: bash
@@ -159,41 +161,41 @@ jobs:
           x=r.read_text(encoding='utf-8').replace('>Bíblia EBD<','>Bíblia EBD Diagnóstico<',1)
           r.write_text(x,encoding='utf-8')
           PY
-          grep -q "applicationId 'com.timachado.bibliaebd.diag'" app/build.gradle
-          grep -q 'Bíblia EBD Diagnóstico' app/src/main/res/values/strings.xml
 
-      - name: Gerar APK Diagnóstico 1.14.2
+      - name: Gerar APK Diagnóstico 1.15.0
         run: gradle --no-daemon clean assembleDebug
 
-      - name: Validar APK Diagnóstico
+      - name: Validar APK Diagnóstico 1.15.0
         shell: bash
         run: |
           set -euo pipefail
           APK=app/build/outputs/apk/debug/app-debug.apk
           AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
           "$AAPT" dump badging "$APK" | tee /tmp/diag-badging.txt
-          grep -q "package: name='com.timachado.bibliaebd.diag' versionCode='108' versionName='1.14.2-teste'" /tmp/diag-badging.txt
+          grep -q "package: name='com.timachado.bibliaebd.diag' versionCode='109' versionName='1.15.0-teste'" /tmp/diag-badging.txt
           grep -q "application-label:'Bíblia EBD Diagnóstico'" /tmp/diag-badging.txt
-          unzip -p "$APK" assets/index.html | grep -q 'app23.js'
-          unzip -p "$APK" assets/app23.js | grep -q '__EBD_BACKUP_1142__'
+          unzip -p "$APK" assets/index.html | grep -q 'app24.js'
+          unzip -p "$APK" assets/index.html | grep -q 'v115.css'
+          unzip -p "$APK" assets/app24.js | grep -q '__EBD_AI_115__'
+          unzip -p "$APK" assets/app24.js | grep -q 'biblia-ai'
           unzip -p "$APK" assets/harpa-lyrics-user.js | grep -qx 'window.HARPA_LYRICS_USER={};'
 
       - name: Guardar Diagnóstico
         shell: bash
         run: |
           mkdir -p /tmp/biblia-diag
-          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.14.2-Backup-Seguro.apk
+          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.15.0-Assistente-IA.apk
 
       - name: Publicar artefatos técnicos internos
         uses: actions/upload-artifact@v4
         with:
-          name: Biblia-EBD-Android-1.14.2-Backup-Seguro-Tecnica
+          name: Biblia-EBD-Android-1.15.0-Assistente-IA-Tecnica
           path: /tmp/biblia-main/*
           retention-days: 14
 
       - name: Publicar Diagnóstico instalável lado a lado
         uses: actions/upload-artifact@v4
         with:
-          name: Biblia-EBD-Diagnostico-1.14.2-Backup-Seguro
-          path: /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.14.2-Backup-Seguro.apk
+          name: Biblia-EBD-Diagnostico-1.15.0-Assistente-IA
+          path: /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.15.0-Assistente-IA.apk
           retention-days: 14
