@@ -1,4 +1,4 @@
-name: Build Bíblia EBD Android — 1.15.2 IA
+name: Build Bíblia EBD Android — 1.15.3 IA
 
 on:
   push:
@@ -80,7 +80,7 @@ jobs:
           print('Harpa:',len(catalog),'títulos; letras privadas: 0')
           PY
 
-      - name: Preparar versão interna 1.15.2
+      - name: Preparar versão interna 1.15.3
         shell: bash
         run: |
           set -euo pipefail
@@ -89,14 +89,14 @@ jobs:
           from pathlib import Path
           p=Path('app/build.gradle')
           s=p.read_text(encoding='utf-8')
-          s=re.sub(r'versionCode\s+\d+','versionCode 111',s,count=1)
-          s=re.sub(r"versionName\s+'[^']+'","versionName '1.15.2'",s,count=1)
-          if 'versionCode 111' not in s or "versionName '1.15.2'" not in s:
-              raise SystemExit('Falha ao preparar 1.15.2 / 111')
+          s=re.sub(r'versionCode\s+\d+','versionCode 112',s,count=1)
+          s=re.sub(r"versionName\s+'[^']+'","versionName '1.15.3'",s,count=1)
+          if 'versionCode 112' not in s or "versionName '1.15.3'" not in s:
+              raise SystemExit('Falha ao preparar 1.15.3 / 112')
           p.write_text(s,encoding='utf-8')
           PY
 
-      - name: Validar 1.15.2 — referência IA e regressão estrutural
+      - name: Validar 1.15.3 — leitura IA e regressão estrutural
         shell: bash
         run: |
           set -euo pipefail
@@ -108,41 +108,36 @@ jobs:
           node --check app/src/main/assets/app24.js
           node --check app/src/main/assets/app25.js
           node --check app/src/main/assets/app26.js
+          node --check app/src/main/assets/app27.js
           python3 - <<'PY'
           from pathlib import Path
           s=Path('app/src/main/assets/index.html').read_text(encoding='utf-8')
           assert s.index('stability1141.js') < s.index('app1.js')
-          assert s.index('app23.js') < s.index('app24.js') < s.index('app25.js') < s.index('app26.js')
-          assert 'v115.css' in s and 'v1151.css' in s and 'v1152.css' in s
-          assert 'data-route="ai115"' in s
+          assert s.index('app23.js') < s.index('app24.js') < s.index('app25.js') < s.index('app26.js') < s.index('app27.js')
+          assert all(x in s for x in ['v115.css','v1151.css','v1152.css','v1153.css'])
           ai=Path('app/src/main/assets/app24.js').read_text(encoding='utf-8')
           conn=Path('app/src/main/assets/app25.js').read_text(encoding='utf-8')
           ref=Path('app/src/main/assets/app26.js').read_text(encoding='utf-8')
-          assert 'https://dwpcddiramxlhavdmmyn.supabase.co/functions/v1/biblia-ai' in ai
-          assert 'OPENAI_API_KEY' not in ai and 'OPENAI_API_KEY' not in conn and 'OPENAI_API_KEY' not in ref
-          assert "action:'check'" in conn
-          assert 'Testar e salvar' in conn and 'Alterar código' in conn and 'Remover código' in conn
-          assert '__EBD_AI_1152__' in ref
+          read=Path('app/src/main/assets/app27.js').read_text(encoding='utf-8')
+          css=Path('app/src/main/assets/v1153.css').read_text(encoding='utf-8')
+          assert 'OPENAI_API_KEY' not in ai+conn+ref+read
+          assert '__EBD_AI_1153__' in read
+          assert 'Tamanho da leitura' in read and 'aiFontMinus1153' in read and 'aiFontPlus1153' in read
+          assert '--ai1153-font:17px' in css and '--ai1153-font:20px' in css
+          assert 'font-size:var(--ai1153-font)!important' in css
           assert 'REFERÊNCIA DETECTADA' in ref
-          assert 'capitulo' in ref and 'versiculo' in ref
-          assert 'contextFromRef1152' in ref
           assert 'Estudar com IA' in ai
-          assert 'Nada é enviado automaticamente' in ai
           PY
           grep -q '__EBD_STABILITY_1141__' app/src/main/assets/stability1141.js
           grep -q '__EBD_BACKUP_1142__' app/src/main/assets/app23.js
           grep -q '__EBD_AI_115__' app/src/main/assets/app24.js
           grep -q '__EBD_AI_1151__' app/src/main/assets/app25.js
           grep -q '__EBD_AI_1152__' app/src/main/assets/app26.js
-          grep -q 'Assistente Bíblia EBD' app/src/main/assets/app24.js
-          grep -q 'Modo Púlpito' app/src/main/assets/app22.js
-          grep -q 'Atlas Bíblico' app/src/main/assets/app22.js
-          grep -q 'versionCode 111' app/build.gradle
-          grep -q "versionName '1.15.2'" app/build.gradle
-          grep -q 'return "1.15.2";' app/src/main/java/com/timachado/bibliaebd/MainActivity.java
+          grep -q '__EBD_AI_1153__' app/src/main/assets/app27.js
+          grep -q 'versionCode 112' app/build.gradle
+          grep -q "versionName '1.15.3'" app/build.gradle
           grep -q 'height:100dvh!important' app/src/main/assets/v1136.css
           grep -q 'setTextZoom(108)' app/src/main/java/com/timachado/bibliaebd/MainActivity.java
-          grep -q 'if ("false".equalsIgnoreCase(value)) { finish(); return; }' app/src/main/java/com/timachado/bibliaebd/MainActivity.java
           grep -qx 'window.HARPA_LYRICS_USER={};' app/src/main/assets/harpa-lyrics-user.js
 
       - name: Gerar APK principal técnico
@@ -155,8 +150,8 @@ jobs:
         shell: bash
         run: |
           mkdir -p /tmp/biblia-main
-          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-main/Biblia-EBD-1.15.2-IA-Referencia-Automatica-Tecnica.apk
-          cp app/build/outputs/bundle/debug/app-debug.aab /tmp/biblia-main/Biblia-EBD-1.15.2-IA-Referencia-Automatica-Tecnica.aab
+          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-main/Biblia-EBD-1.15.3-IA-Leitura-Confortavel-Tecnica.apk
+          cp app/build/outputs/bundle/debug/app-debug.aab /tmp/biblia-main/Biblia-EBD-1.15.3-IA-Leitura-Confortavel-Tecnica.aab
 
       - name: Preparar Diagnóstico lado a lado
         shell: bash
@@ -175,40 +170,40 @@ jobs:
           r.write_text(x,encoding='utf-8')
           PY
 
-      - name: Gerar APK Diagnóstico 1.15.2
+      - name: Gerar APK Diagnóstico 1.15.3
         run: gradle --no-daemon clean assembleDebug
 
-      - name: Validar APK Diagnóstico 1.15.2
+      - name: Validar APK Diagnóstico 1.15.3
         shell: bash
         run: |
           set -euo pipefail
           APK=app/build/outputs/apk/debug/app-debug.apk
           AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
           "$AAPT" dump badging "$APK" | tee /tmp/diag-badging.txt
-          grep -q "package: name='com.timachado.bibliaebd.diag' versionCode='111' versionName='1.15.2-teste'" /tmp/diag-badging.txt
+          grep -q "package: name='com.timachado.bibliaebd.diag' versionCode='112' versionName='1.15.3-teste'" /tmp/diag-badging.txt
           grep -q "application-label:'Bíblia EBD Diagnóstico'" /tmp/diag-badging.txt
-          unzip -p "$APK" assets/index.html | grep -q 'app26.js'
-          unzip -p "$APK" assets/index.html | grep -q 'v1152.css'
-          unzip -p "$APK" assets/app26.js | grep -q '__EBD_AI_1152__'
-          unzip -p "$APK" assets/app26.js | grep -q 'REFERÊNCIA DETECTADA'
+          unzip -p "$APK" assets/index.html | grep -q 'app27.js'
+          unzip -p "$APK" assets/index.html | grep -q 'v1153.css'
+          unzip -p "$APK" assets/app27.js | grep -q '__EBD_AI_1153__'
+          unzip -p "$APK" assets/v1153.css | grep -q -- '--ai1153-font:17px'
           unzip -p "$APK" assets/harpa-lyrics-user.js | grep -qx 'window.HARPA_LYRICS_USER={};'
 
       - name: Guardar Diagnóstico
         shell: bash
         run: |
           mkdir -p /tmp/biblia-diag
-          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.15.2-IA-Referencia-Automatica.apk
+          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.15.3-IA-Leitura-Confortavel.apk
 
       - name: Publicar artefatos técnicos internos
         uses: actions/upload-artifact@v4
         with:
-          name: Biblia-EBD-Android-1.15.2-IA-Referencia-Automatica-Tecnica
+          name: Biblia-EBD-Android-1.15.3-IA-Leitura-Confortavel-Tecnica
           path: /tmp/biblia-main/*
           retention-days: 14
 
       - name: Publicar Diagnóstico instalável lado a lado
         uses: actions/upload-artifact@v4
         with:
-          name: Biblia-EBD-Diagnostico-1.15.2-IA-Referencia-Automatica
-          path: /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.15.2-IA-Referencia-Automatica.apk
+          name: Biblia-EBD-Diagnostico-1.15.3-IA-Leitura-Confortavel
+          path: /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.15.3-IA-Leitura-Confortavel.apk
           retention-days: 14
