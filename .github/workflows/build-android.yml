@@ -1,4 +1,4 @@
-name: Build Bíblia EBD Android — 1.16.2 Regressão Guiada
+name: Build Bíblia EBD Android — 1.17.0 Escala Global
 
 on:
   push:
@@ -70,7 +70,7 @@ jobs:
           print('Bíblia',chapters,verses,'Harpa catálogo',len(catalog))
           PY
 
-      - name: Preparar versão 1.16.2 sem regravar credenciais históricas
+      - name: Preparar versão 1.17.0 sem regravar credenciais históricas
         shell: bash
         run: |
           set -euo pipefail
@@ -78,35 +78,39 @@ jobs:
           import re
           from pathlib import Path
           p=Path('app/build.gradle'); s=p.read_text(encoding='utf-8')
-          s=re.sub(r'versionCode\s+\d+','versionCode 122',s,count=1)
-          s=re.sub(r"versionName\s+'[^']+'","versionName '1.16.2'",s,count=1)
+          s=re.sub(r'versionCode\s+\d+','versionCode 123',s,count=1)
+          s=re.sub(r"versionName\s+'[^']+'","versionName '1.17.0'",s,count=1)
           p.write_text(s,encoding='utf-8')
           PY
 
-      - name: Validar 1.16.2 — regressão guiada
+      - name: Validar 1.17.0 — escala global e regressão preservada
         shell: bash
         run: |
           set -euo pipefail
-          for f in stability1141.js app20.js app21.js app22.js app23.js app24.js app25.js app26.js app27.js app28.js app29.js app30.js app31.js app32.js app33.js app34.js app35.js app36.js app37.js; do node --check "app/src/main/assets/$f"; done
+          for f in stability1141.js app20.js app21.js app22.js app23.js app24.js app25.js app26.js app27.js app28.js app29.js app30.js app31.js app32.js app33.js app34.js app35.js app36.js app37.js app38.js; do node --check "app/src/main/assets/$f"; done
           python3 - <<'PY'
           from pathlib import Path
           import re
           idx=Path('app/src/main/assets/index.html').read_text(encoding='utf-8')
-          assert idx.index('app35.js') < idx.index('app36.js') < idx.index('app37.js')
-          assert 'v1160.css' in idx and 'v1161.css' in idx and 'v1162.css' in idx
-          d=Path('app/src/main/assets/app35.js').read_text(encoding='utf-8')
-          n=Path('app/src/main/assets/app36.js').read_text(encoding='utf-8')
-          g=Path('app/src/main/assets/app37.js').read_text(encoding='utf-8')
-          c=Path('app/src/main/assets/v1162.css').read_text(encoding='utf-8')
-          assert '__EBD_DIAGNOSTICS_1160__' in d
-          assert '__EBD_NOTIFICATIONS_1161__' in n
-          assert '__EBD_GUIDED_1162__' in g
-          assert 'Regressão guiada 1.16.2' in g and 'Abrir recurso' in g and 'Aprovado' in g and 'Falhou' in g
-          assert 'ebd-guided-regression-v1162' in g and 'ebd-guided-active-v1162' in g
-          assert 'v1162-guided' in c and 'v1162-return' in c
-          assert 'OPENAI_API_KEY' not in d+n+g
+          assert idx.index('app35.js') < idx.index('app36.js') < idx.index('app37.js') < idx.index('app38.js')
+          assert 'v1160.css' in idx and 'v1161.css' in idx and 'v1162.css' in idx and 'v1170.css' in idx
+          a=Path('app/src/main/assets/app38.js').read_text(encoding='utf-8')
+          c=Path('app/src/main/assets/v1170.css').read_text(encoding='utf-8')
+          assert '__EBD_UI_SCALE_1170__' in a
+          assert 'ebd-ui-scale-v1170' in a
+          for n in ('100','112','125','140'): assert n in a
+          assert 'Tamanho do aplicativo' in a and 'Aparência e Leitura' not in a
+          assert 'setTextScale' in a
+          assert 'v1170-scale-140' in c and 'v1170-scale-row' in c
+          assert '__EBD_GUIDED_1162__' in Path('app/src/main/assets/app37.js').read_text(encoding='utf-8')
+          assert '__EBD_DIAGNOSTICS_1160__' in Path('app/src/main/assets/app35.js').read_text(encoding='utf-8')
+          assert 'OPENAI_API_KEY' not in a
           gradle=Path('app/build.gradle').read_text(encoding='utf-8')
-          assert 'versionCode 122' in gradle and "versionName '1.16.2'" in gradle
+          assert 'versionCode 123' in gradle and "versionName '1.17.0'" in gradle
+          main=Path('app/src/main/java/com/timachado/bibliaebd/MainActivity.java').read_text(encoding='utf-8')
+          assert 'return "1.17.0";' in main
+          assert 'setTextScale(int percent)' in main
+          assert 'setTextZoom(112)' in main
           ebd=Path('app/src/main/assets/app12.js').read_text(encoding='utf-8')
           block=ebd.split('const EBD_LESSONS_110 = [',1)[1].split('];',1)[0]
           assert len(re.findall(r'\{n:\d+,date:',block))==13
@@ -128,8 +132,8 @@ jobs:
         shell: bash
         run: |
           mkdir -p /tmp/biblia-main
-          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-main/Biblia-EBD-1.16.2-Regressao-Guiada-Tecnica.apk
-          cp app/build/outputs/bundle/debug/app-debug.aab /tmp/biblia-main/Biblia-EBD-1.16.2-Regressao-Guiada-Tecnica.aab
+          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-main/Biblia-EBD-1.17.0-Escala-Global-Tecnica.apk
+          cp app/build/outputs/bundle/debug/app-debug.aab /tmp/biblia-main/Biblia-EBD-1.17.0-Escala-Global-Tecnica.aab
 
       - name: Preparar Diagnóstico lado a lado
         shell: bash
@@ -143,36 +147,36 @@ jobs:
       - name: Gerar APK Diagnóstico
         run: gradle --no-daemon clean assembleDebug
 
-      - name: Validar APK Diagnóstico 1.16.2
+      - name: Validar APK Diagnóstico 1.17.0
         shell: bash
         run: |
           set -euo pipefail
           APK=app/build/outputs/apk/debug/app-debug.apk
           AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
           "$AAPT" dump badging "$APK" | tee /tmp/badging.txt
-          grep -q "package: name='com.timachado.bibliaebd.diag' versionCode='122' versionName='1.16.2-teste'" /tmp/badging.txt
+          grep -q "package: name='com.timachado.bibliaebd.diag' versionCode='123' versionName='1.17.0-teste'" /tmp/badging.txt
           grep -q "application-label:'Bíblia EBD Diagnóstico'" /tmp/badging.txt
-          unzip -p "$APK" assets/index.html | grep -q 'app37.js'
-          unzip -p "$APK" assets/app37.js | grep -q '__EBD_GUIDED_1162__'
-          unzip -p "$APK" assets/v1162.css | grep -q 'v1162-guided'
+          unzip -p "$APK" assets/index.html | grep -q 'app38.js'
+          unzip -p "$APK" assets/app38.js | grep -q '__EBD_UI_SCALE_1170__'
+          unzip -p "$APK" assets/v1170.css | grep -q 'v1170-scale-row'
           unzip -p "$APK" assets/harpa-lyrics-user.js | grep -qx 'window.HARPA_LYRICS_USER={};'
 
       - name: Guardar Diagnóstico
         shell: bash
         run: |
           mkdir -p /tmp/biblia-diag
-          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.16.2-Regressao-Guiada.apk
+          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.17.0-Escala-Global.apk
 
       - name: Publicar técnico
         uses: actions/upload-artifact@v4
         with:
-          name: Biblia-EBD-Android-1.16.2-Regressao-Guiada-Tecnica
+          name: Biblia-EBD-Android-1.17.0-Escala-Global-Tecnica
           path: /tmp/biblia-main/*
           retention-days: 14
 
       - name: Publicar Diagnóstico
         uses: actions/upload-artifact@v4
         with:
-          name: Biblia-EBD-Diagnostico-1.16.2-Regressao-Guiada
-          path: /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.16.2-Regressao-Guiada.apk
+          name: Biblia-EBD-Diagnostico-1.17.0-Escala-Global
+          path: /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.17.0-Escala-Global.apk
           retention-days: 14
