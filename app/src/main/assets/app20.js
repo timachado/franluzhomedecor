@@ -1,4 +1,4 @@
-// 1.13.4 — navegação interna determinística + rolagem no painel de conteúdo.
+// 1.13.4+ — navegação interna determinística + rolagem no painel de conteúdo.
 (function(){
   const originalNav1134=window.nav;
   const hasState1134=()=>typeof state!=='undefined';
@@ -16,7 +16,7 @@
       reader:'bible',favorites:'bible',notes:'bible',highlighted19:'bible',history19:'bible',
       lesson:'ebd',magazine:'ebd',magReader:'magazine',classroom:'ebd',attendance:'ebd',agenda:'ebd',notifications:'home',library:'ebd',ebdCalendar110:'ebd',
       hymn:'harpa',planDetail111:'plans111',plans111:'home',daily111:'home',stats111:'home',settings112:'home',
-      harpa:'home',outlines:'home',dictionary:'home',concordance:'search',tools:'home',sync:'home',contentInfo:'home',search:'home',profile:'home'
+      ai115:'home',harpa:'home',outlines:'home',dictionary:'home',concordance:'search',tools:'home',sync:'home',contentInfo:'home',search:'home',profile:'home'
     };
     return map[r]||'home';
   }
