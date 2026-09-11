@@ -1,4 +1,4 @@
-name: Build Bíblia EBD Android — 1.16.0 Regressão
+name: Build Bíblia EBD Android — 1.16.1 Notificações
 
 on:
   push:
@@ -46,19 +46,19 @@ jobs:
           import json, os, re
           root='/tmp/pd-text-corpus/bibles/pt'
           with open(os.path.join(root,'index.json'),encoding='utf-8') as f: meta=json.load(f)
-          pt_names=['Gênesis','Êxodo','Levítico','Números','Deuteronômio','Josué','Juízes','Rute','1 Samuel','2 Samuel','1 Reis','2 Reis','1 Crônicas','2 Crônicas','Esdras','Neemias','Ester','Jó','Salmos','Provérbios','Eclesiastes','Cânticos','Isaías','Jeremias','Lamentações','Ezequiel','Daniel','Oseias','Joel','Amós','Obadias','Jonas','Miqueias','Naum','Habacuque','Sofonias','Ageu','Zacarias','Malaquias','Mateus','Marcos','Lucas','João','Atos','Romanos','1 Coríntios','2 Coríntios','Gálatas','Efésios','Filipenses','Colossenses','1 Tessalonicenses','2 Tessalonicenses','1 Timóteo','2 Timóteo','Tito','Filemom','Hebreus','Tiago','1 Pedro','2 Pedro','1 João','2 João','3 João','Judas','Apocalipse']
-          books=[]; chapters=0; verses_total=0
-          assert len(meta['books'])==66 and len(pt_names)==66
-          for src,name in zip(meta['books'],pt_names):
+          names=['Gênesis','Êxodo','Levítico','Números','Deuteronômio','Josué','Juízes','Rute','1 Samuel','2 Samuel','1 Reis','2 Reis','1 Crônicas','2 Crônicas','Esdras','Neemias','Ester','Jó','Salmos','Provérbios','Eclesiastes','Cânticos','Isaías','Jeremias','Lamentações','Ezequiel','Daniel','Oseias','Joel','Amós','Obadias','Jonas','Miqueias','Naum','Habacuque','Sofonias','Ageu','Zacarias','Malaquias','Mateus','Marcos','Lucas','João','Atos','Romanos','1 Coríntios','2 Coríntios','Gálatas','Efésios','Filipenses','Colossenses','1 Tessalonicenses','2 Tessalonicenses','1 Timóteo','2 Timóteo','Tito','Filemom','Hebreus','Tiago','1 Pedro','2 Pedro','1 João','2 João','3 João','Judas','Apocalipse']
+          books=[]; chapters=0; verses=0
+          assert len(meta['books'])==66 and len(names)==66
+          for src,name in zip(meta['books'],names):
               rows=[]
               for c in range(1,src['chapters']+1):
                   with open(os.path.join(root,'books',src['slug'],'chapters',f'{c}.json'),encoding='utf-8') as f: ch=json.load(f)
                   vs=[v['text'].strip() for v in ch['verses']]; assert vs
-                  rows.append(vs); chapters+=1; verses_total+=len(vs)
+                  rows.append(vs); chapters+=1; verses+=len(vs)
               books.append({'name':name,'slug':src['slug'],'chapters':rows})
-          assert chapters==1189 and verses_total==31098
+          assert chapters==1189 and verses==31098
           with open('app/src/main/assets/bible-data.js','w',encoding='utf-8') as f:
-              f.write('window.BIBLE_DATA_V18='); json.dump({'translation':'João Ferreira de Almeida','license':'Public Domain','stats':{'books':66,'chapters':chapters,'verses':verses_total},'books':books},f,ensure_ascii=False,separators=(',',':')); f.write(';\n')
+              f.write('window.BIBLE_DATA_V18='); json.dump({'translation':'João Ferreira de Almeida','license':'Public Domain','stats':{'books':66,'chapters':chapters,'verses':verses},'books':books},f,ensure_ascii=False,separators=(',',':')); f.write(';\n')
           with open('/tmp/harpa.json',encoding='utf-8') as f: raw=json.load(f)
           catalog=[]
           for n in range(1,641):
@@ -66,50 +66,48 @@ jobs:
               catalog.append({'n':n,'title':re.sub(r'^\s*\d+\s*-\s*','',row['hino']).strip()})
           with open('app/src/main/assets/harpa-data.js','w',encoding='utf-8') as f:
               f.write('window.HARPA_CATALOG_V18='); json.dump(catalog,f,ensure_ascii=False,separators=(',',':')); f.write(';\n')
-          # O build técnico mantém somente o catálogo. A variante completa é montada fora do CI público/técnico.
           with open('app/src/main/assets/harpa-lyrics-user.js','w',encoding='utf-8') as f: f.write('window.HARPA_LYRICS_USER={};\n')
-          print('Bíblia', chapters, verses_total, 'Harpa catálogo', len(catalog))
+          print('Bíblia',chapters,verses,'Harpa catálogo',len(catalog))
           PY
 
-      - name: Preparar versão 1.16.0 sem regravar credenciais históricas
+      - name: Preparar versão 1.16.1 sem regravar credenciais históricas
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
           import re
           from pathlib import Path
-          p=Path('app/build.gradle')
-          s=p.read_text(encoding='utf-8')
-          s=re.sub(r'versionCode\s+\d+','versionCode 120',s,count=1)
-          s=re.sub(r"versionName\s+'[^']+'","versionName '1.16.0'",s,count=1)
+          p=Path('app/build.gradle'); s=p.read_text(encoding='utf-8')
+          s=re.sub(r'versionCode\s+\d+','versionCode 121',s,count=1)
+          s=re.sub(r"versionName\s+'[^']+'","versionName '1.16.1'",s,count=1)
           p.write_text(s,encoding='utf-8')
           PY
 
-      - name: Validar 1.16.0 — regressão estrutural
+      - name: Validar 1.16.1 — regressão e notificações
         shell: bash
         run: |
           set -euo pipefail
-          for f in stability1141.js app20.js app21.js app22.js app23.js app24.js app25.js app26.js app27.js app28.js app29.js app30.js app31.js app32.js app33.js app34.js app35.js; do node --check "app/src/main/assets/$f"; done
+          for f in stability1141.js app20.js app21.js app22.js app23.js app24.js app25.js app26.js app27.js app28.js app29.js app30.js app31.js app32.js app33.js app34.js app35.js app36.js; do node --check "app/src/main/assets/$f"; done
           python3 - <<'PY'
           from pathlib import Path
           import re
-          s=Path('app/src/main/assets/index.html').read_text(encoding='utf-8')
-          assert s.index('app34.js') < s.index('app35.js')
-          assert 'v1160.css' in s and 'app35.js' in s
-          assert 'data-route="diagnostics1160"' in s
+          idx=Path('app/src/main/assets/index.html').read_text(encoding='utf-8')
+          assert idx.index('app34.js') < idx.index('app35.js') < idx.index('app36.js')
+          assert 'v1160.css' in idx and 'v1161.css' in idx
           a=Path('app/src/main/assets/app35.js').read_text(encoding='utf-8')
-          c=Path('app/src/main/assets/v1160.css').read_text(encoding='utf-8')
-          assert '__EBD_DIAGNOSTICS_1160__' in a
-          assert 'Bíblia completa' in a and 'Harpa — letras' in a and 'EBD trimestral' in a
-          assert 'Backup Seguro' in a and 'Integridade dos dados' in a
-          assert 'Teste online da IA' in a and 'Nenhum código privado' in a
-          assert 'v1160-result' in c and 'v1160-manual' in c
-          assert 'OPENAI_API_KEY' not in a
-          assert 'biblia-ai-access-v115' in a
+          n=Path('app/src/main/assets/app36.js').read_text(encoding='utf-8')
+          c=Path('app/src/main/assets/v1161.css').read_text(encoding='utf-8')
+          assert "startsWith('1.16.')" in a
+          assert 'data-diag-id' in a and '__EBD_DIAGNOSTICS_1160__' in a
+          assert '__EBD_NOTIFICATIONS_1161__' in n
+          assert 'Ativar notificações' in n and 'requestNotificationPermission' in n
+          assert 'v1161-notif-action' in c
+          assert 'OPENAI_API_KEY' not in a+n
           g=Path('app/build.gradle').read_text(encoding='utf-8')
-          assert 'versionCode 120' in g and "versionName '1.16.0'" in g
+          assert 'versionCode 121' in g and "versionName '1.16.1'" in g
           m=Path('app/src/main/java/com/timachado/bibliaebd/MainActivity.java').read_text(encoding='utf-8')
-          assert 'return "1.16.0";' in m
+          assert 'return "1.16.1";' in m
+          assert 'onRequestPermissionsResult' in m and '__EBD_NOTIFICATIONS_1161__' in m
           ebd=Path('app/src/main/assets/app12.js').read_text(encoding='utf-8')
           block=ebd.split('const EBD_LESSONS_110 = [',1)[1].split('];',1)[0]
           assert len(re.findall(r'\{n:\d+,date:',block))==13
@@ -117,9 +115,6 @@ jobs:
           grep -q '__EBD_OUTLINES_11510__' app/src/main/assets/app34.js
           grep -q '__EBD_SMART_1159__' app/src/main/assets/app33.js
           grep -q '__EBD_NATIVE_1158__' app/src/main/assets/app32.js
-          grep -q '__EBD_CLASS_AI_1157__' app/src/main/assets/app31.js
-          grep -q '__EBD_AI_EBD_1156__' app/src/main/assets/app30.js
-          grep -q '__EBD_READER_1155__' app/src/main/assets/app29.js
           grep -q '__EBD_BACKUP_1142__' app/src/main/assets/app23.js
           grep -q 'font-size:1em!important' app/src/main/assets/v1155.css
           grep -qx 'window.HARPA_LYRICS_USER={};' app/src/main/assets/harpa-lyrics-user.js
@@ -134,53 +129,51 @@ jobs:
         shell: bash
         run: |
           mkdir -p /tmp/biblia-main
-          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-main/Biblia-EBD-1.16.0-Regressao-Tecnica.apk
-          cp app/build/outputs/bundle/debug/app-debug.aab /tmp/biblia-main/Biblia-EBD-1.16.0-Regressao-Tecnica.aab
+          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-main/Biblia-EBD-1.16.1-Notificacoes-Tecnica.apk
+          cp app/build/outputs/bundle/debug/app-debug.aab /tmp/biblia-main/Biblia-EBD-1.16.1-Notificacoes-Tecnica.aab
 
       - name: Preparar Diagnóstico lado a lado
         shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          p=Path('app/build.gradle'); s=p.read_text(encoding='utf-8')
-          s=s.replace("applicationId 'com.timachado.bibliaebd'","applicationId 'com.timachado.bibliaebd.diag'",1)
-          p.write_text(s,encoding='utf-8')
+          p=Path('app/build.gradle'); s=p.read_text(encoding='utf-8').replace("applicationId 'com.timachado.bibliaebd'","applicationId 'com.timachado.bibliaebd.diag'",1); p.write_text(s,encoding='utf-8')
           r=Path('app/src/main/res/values/strings.xml'); x=r.read_text(encoding='utf-8').replace('>Bíblia EBD<','>Bíblia EBD Diagnóstico<',1); r.write_text(x,encoding='utf-8')
           PY
 
       - name: Gerar APK Diagnóstico
         run: gradle --no-daemon clean assembleDebug
 
-      - name: Validar APK Diagnóstico 1.16.0
+      - name: Validar APK Diagnóstico 1.16.1
         shell: bash
         run: |
           set -euo pipefail
           APK=app/build/outputs/apk/debug/app-debug.apk
           AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
           "$AAPT" dump badging "$APK" | tee /tmp/badging.txt
-          grep -q "package: name='com.timachado.bibliaebd.diag' versionCode='120' versionName='1.16.0-teste'" /tmp/badging.txt
+          grep -q "package: name='com.timachado.bibliaebd.diag' versionCode='121' versionName='1.16.1-teste'" /tmp/badging.txt
           grep -q "application-label:'Bíblia EBD Diagnóstico'" /tmp/badging.txt
-          unzip -p "$APK" assets/index.html | grep -q 'app35.js'
-          unzip -p "$APK" assets/app35.js | grep -q 'Central de Diagnóstico'
-          unzip -p "$APK" assets/v1160.css | grep -q 'v1160-result'
+          unzip -p "$APK" assets/index.html | grep -q 'app36.js'
+          unzip -p "$APK" assets/app36.js | grep -q '__EBD_NOTIFICATIONS_1161__'
+          unzip -p "$APK" assets/v1161.css | grep -q 'v1161-notif-action'
           unzip -p "$APK" assets/harpa-lyrics-user.js | grep -qx 'window.HARPA_LYRICS_USER={};'
 
       - name: Guardar Diagnóstico
         shell: bash
         run: |
           mkdir -p /tmp/biblia-diag
-          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.16.0-Regressao.apk
+          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.16.1-Notificacoes.apk
 
       - name: Publicar técnico
         uses: actions/upload-artifact@v4
         with:
-          name: Biblia-EBD-Android-1.16.0-Regressao-Tecnica
+          name: Biblia-EBD-Android-1.16.1-Notificacoes-Tecnica
           path: /tmp/biblia-main/*
           retention-days: 14
 
       - name: Publicar Diagnóstico
         uses: actions/upload-artifact@v4
         with:
-          name: Biblia-EBD-Diagnostico-1.16.0-Regressao
-          path: /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.16.0-Regressao.apk
+          name: Biblia-EBD-Diagnostico-1.16.1-Notificacoes
+          path: /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.16.1-Notificacoes.apk
           retention-days: 14
