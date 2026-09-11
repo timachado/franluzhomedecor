@@ -1,4 +1,4 @@
-name: Build Bíblia EBD Android
+name: Build Bíblia EBD Android — Estabilização
 
 on:
   push:
@@ -74,39 +74,67 @@ jobs:
               catalog.append({'n':n,'title':title})
           with open('app/src/main/assets/harpa-data.js','w',encoding='utf-8') as f:
               f.write('window.HARPA_CATALOG_V18=');json.dump(catalog,f,ensure_ascii=False,separators=(',',':'));f.write(';\n')
+          # O GitHub gera somente a variante técnica sem letras privadas.
           with open('app/src/main/assets/harpa-lyrics-user.js','w',encoding='utf-8') as f:
               f.write('window.HARPA_LYRICS_USER={};\n')
           print('Bíblia:',len(books),'livros,',chapter_count,'capítulos,',verse_count,'versículos')
           print('Harpa:',len(catalog),'títulos')
           PY
 
-      - name: Validar 1.14.0
+      - name: Preparar versão interna 1.14.1
+        shell: bash
         run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('app/build.gradle')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace('versionCode 105','versionCode 107')
+          s=s.replace("versionName '1.14.0'","versionName '1.14.1'")
+          if 'versionCode 107' not in s or "versionName '1.14.1'" not in s:
+              raise SystemExit('Falha ao preparar numeração 1.14.1 / 107')
+          p.write_text(s,encoding='utf-8')
+          PY
+
+      - name: Validar 1.14.1 Estabilização
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check app/src/main/assets/stability1141.js
           node --check app/src/main/assets/app20.js
           node --check app/src/main/assets/app21.js
           node --check app/src/main/assets/app22.js
           grep -q 'v114.css' app/src/main/assets/index.html
           grep -q 'app22.js' app/src/main/assets/index.html
+          grep -q 'stability1141.js' app/src/main/assets/index.html
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('app/src/main/assets/index.html').read_text(encoding='utf-8')
+          assert s.index('stability1141.js') < s.index('app1.js')
+          PY
+          grep -q '__EBD_STABILITY_1141__' app/src/main/assets/stability1141.js
+          grep -q 'ebd-recovery-v1141-' app/src/main/assets/stability1141.js
           grep -q 'ministry114' app/src/main/assets/index.html
           grep -q 'Modo Púlpito' app/src/main/assets/app22.js
           grep -q 'Atlas Bíblico' app/src/main/assets/app22.js
-          grep -q 'versionCode 105' app/build.gradle
-          grep -q "versionName '1.14.0'" app/build.gradle
+          grep -q 'versionCode 107' app/build.gradle
+          grep -q "versionName '1.14.1'" app/build.gradle
           grep -q 'height:100dvh!important' app/src/main/assets/v1136.css
           grep -q 'setTextZoom(108)' app/src/main/java/com/timachado/bibliaebd/MainActivity.java
+          grep -q 'return "1.14.1";' app/src/main/java/com/timachado/bibliaebd/MainActivity.java
           grep -q 'if ("false".equalsIgnoreCase(value)) { finish(); return; }' app/src/main/java/com/timachado/bibliaebd/MainActivity.java
 
-      - name: Gerar APK
+      - name: Gerar APK de estabilização
         run: gradle --no-daemon assembleDebug
 
       - name: Gerar AAB de teste
         run: gradle --no-daemon bundleDebug
 
-      - name: Publicar APK e AAB
+      - name: Publicar artefatos internos
         uses: actions/upload-artifact@v4
         with:
-          name: Biblia-EBD-Android-1.14.0-Ministerio-Estudo
+          name: Biblia-EBD-Android-1.14.1-Estabilizacao
           path: |
             app/build/outputs/apk/debug/app-debug.apk
             app/build/outputs/bundle/debug/app-debug.aab
-          retention-days: 7
+          retention-days: 14
