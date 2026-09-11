@@ -4,7 +4,7 @@ Este arquivo acompanha somente a linha Android `build-biblia-ebd-temp`. A branch
 
 ## Meta
 
-Chegar a uma versão estável somente depois de passar pelos gates abaixo, preservando dados locais entre atualizações. Publicação em loja fica fora deste ciclo.
+Chegar a uma versão estável somente depois de completar as funcionalidades planejadas e passar pelos gates de qualidade abaixo, preservando dados locais entre atualizações. Publicação em loja fica fora deste ciclo.
 
 ## 1.14.1 — Integridade e inicialização
 
@@ -30,7 +30,37 @@ Chegar a uma versão estável somente depois de passar pelos gates abaixo, prese
 - [ ] Validar geração, análise e restauração em aparelho usando a variante Diagnóstico.
 - [ ] Validar persistência após fechar e reabrir o aplicativo.
 
-## 1.14.3 — Regressão dos recursos
+## 1.15.x — Expansão funcional antes da estável
+
+### Assistente Bíblia EBD — IA
+
+- [ ] Criar uma tela própria de Assistente IA integrada ao visual do aplicativo.
+- [ ] Permitir iniciar a IA a partir de um versículo, seleção de versículos, capítulo, lição EBD ou esboço.
+- [ ] Explicar versículo e contexto sem substituir o texto bíblico original.
+- [ ] Resumir passagem ou capítulo.
+- [ ] Responder perguntas sobre o texto usando a Bíblia disponível no app como contexto principal.
+- [ ] Gerar esboço de pregação/estudo a partir de tema ou referência.
+- [ ] Gerar perguntas, objetivos, aplicações e roteiro de aula para EBD.
+- [ ] Oferecer modos Aluno e Professor com respostas adequadas ao objetivo de cada perfil.
+- [ ] Permitir salvar uma resposta da IA como anotação, copiar e compartilhar.
+- [ ] Mostrar claramente o que é texto bíblico e o que é conteúdo gerado pela IA.
+- [ ] Exigir ação explícita do usuário antes de enviar conteúdo para a IA.
+- [ ] Nunca enviar notas, favoritos, histórico ou dados pessoais automaticamente.
+- [ ] Manter Bíblia, Harpa, EBD, notas e demais recursos funcionando offline quando a IA estiver indisponível.
+- [ ] Não armazenar chave secreta de provedor de IA dentro do APK; usar backend intermediário seguro.
+- [ ] Tratar ausência de internet, timeout, limite do serviço e falhas do backend sem travar o aplicativo.
+
+### Recursos adicionais já previstos
+
+- [ ] Evoluir Esboços para salvar, editar, duplicar, organizar e exportar roteiros.
+- [ ] Evoluir Atlas Bíblico com lugares, referências e navegação entre local e passagem.
+- [ ] Melhorar Dicionário Bíblico e Português e conectá-los ao fluxo de estudo.
+- [ ] Melhorar busca unificada e busca por linguagem natural.
+- [ ] Ampliar recursos do Professor: perguntas, dinâmica, plano de aula e material de apoio.
+- [ ] Revisar experiência de Minha Turma, chamada, agenda e compartilhamento para classe.
+- [ ] Avaliar áudio/leitura em voz alta sem comprometer o modo offline.
+
+## 1.16.x — Regressão completa dos recursos
 
 - [ ] Bíblia: 66 livros / 1.189 capítulos / 31.098 versículos.
 - [ ] Busca por texto e referências.
@@ -41,22 +71,24 @@ Chegar a uma versão estável somente depois de passar pelos gates abaixo, prese
 - [ ] EBD: 13 lições, Aluno/Professor, checklist, progresso e próxima aula.
 - [ ] Minha Turma, chamada e agenda.
 - [ ] Harpa privada: validar 640/640 somente no build privado.
-- [ ] Dicionário, concordância, esboços e Ministério & Estudo.
+- [ ] Dicionário, concordância, esboços, Atlas e Ministério & Estudo.
+- [ ] Assistente IA: contexto, respostas, salvamento e tratamento de falhas.
 - [ ] Modo Púlpito e manter tela ligada.
 - [ ] Aparência, foco, contraste e espaçamento.
 
-## 1.15.x — Polimento
+## 1.17.x — Polimento
 
 - [ ] Remover textos, rótulos e fallbacks legados que não representam mais o app atual.
 - [ ] Revisar acessibilidade e tamanhos de toque.
 - [ ] Revisar telas vazias e mensagens de erro.
 - [ ] Revisar desempenho da Home, busca e listas longas.
 - [ ] Garantir que nenhuma atualização limpe dados locais.
+- [ ] Revisar comportamento online/offline do Assistente IA.
 
 ## Release Candidate
 
-Uma build RC só será criada quando todos os testes de regressão acima estiverem concluídos e não houver bug bloqueador conhecido.
+Uma build RC só será criada quando as funcionalidades planejadas acima estiverem concluídas, todos os testes de regressão tiverem passado e não houver bug bloqueador conhecido.
 
 ## Versão estável
 
-A versão estável final será promovida somente depois de teste real em aparelho, validação do backup/restauração e definição segura da assinatura usada para atualizar a instalação principal. Publicação em loja é uma decisão separada e permanece pausada.
+A versão estável final será promovida somente depois de teste real em aparelho, validação do backup/restauração, validação da IA e definição segura da assinatura usada para atualizar a instalação principal. Publicação em loja é uma decisão separada e permanece pausada.
