@@ -15,7 +15,7 @@ Chegar a uma versão estável somente depois de completar as funcionalidades pla
 - [x] Isolar JSON local corrompido sem derrubar a inicialização.
 - [x] Guardar diagnóstico do último erro JavaScript.
 - [x] Criar variante Diagnóstico com pacote separado para testes sem tocar no app principal.
-- [ ] Confirmar Home, Bíblia, EBD, Harpa, Busca, Perfil e menu no aparelho.
+- [ ] Confirmar Home, Bíblia, EBD, Harpa, Busca, Perfil e menu no aparelho durante a regressão 1.16.x.
 
 ## 1.14.2 — Backup e recuperação
 
@@ -59,10 +59,10 @@ Chegar a uma versão estável somente depois de completar as funcionalidades pla
 
 ### Recursos adicionais já previstos
 
-- [ ] Evoluir Esboços para editar, duplicar e organizar roteiros; salvar/copiar/compartilhar já disponível.
-- [ ] Evoluir Atlas Bíblico com lugares, referências e navegação entre local e passagem.
-- [ ] Melhorar Dicionário Bíblico e Português e conectá-los ao fluxo de estudo.
-- [ ] Melhorar busca unificada e busca por linguagem natural.
+- [x] Evoluir Esboços para editar, duplicar, favoritar, pesquisar, criar manualmente e organizar por pastas.
+- [x] Evoluir Atlas Bíblico com mais lugares, referências, rotas de estudo e navegação entre local e passagem.
+- [x] Melhorar Dicionário Bíblico e Português e conectá-los ao fluxo de estudo.
+- [x] Melhorar busca unificada e busca por linguagem natural, mantendo busca bíblica local completa.
 - [x] Ampliar recursos do Professor: perguntas, dinâmica, plano de aula e material de apoio com IA.
 - [x] Integrar Minha Turma, chamada e agenda à IA preservando dados pessoais.
 - [x] Compartilhamento da turma e agenda pela folha nativa do Android, sem cadastro online.
@@ -70,6 +70,19 @@ Chegar a uma versão estável somente depois de completar as funcionalidades pla
 - [x] Leitura em voz alta usando o mecanismo de voz do Android para Bíblia, Harpa e respostas da IA.
 
 ## 1.16.x — Regressão completa dos recursos
+
+### 1.16.0 — Central de Diagnóstico
+
+- [x] Criar Central de Diagnóstico dentro do app, sem apagar ou substituir dados do usuário.
+- [x] Verificar automaticamente contagem e leitura da Bíblia, parser de referência, Busca Inteligente, Dicionário e Atlas.
+- [x] Verificar automaticamente EBD, catálogo/letras da Harpa, Esboços, Backup Seguro e integridade do armazenamento local.
+- [x] Verificar presença da ponte Android para compartilhamento, voz e lembretes.
+- [x] Criar teste separado da conexão da IA sem incluir código de acesso, notas ou histórico no relatório.
+- [x] Criar checklist manual para os fluxos que exigem interação real no aparelho.
+- [x] Permitir compartilhar relatório de diagnóstico sem conteúdo pessoal.
+- [ ] Executar a Central de Diagnóstico na build completa 1.16.0 em aparelho real e corrigir qualquer falha encontrada.
+
+### Regressão funcional em aparelho
 
 - [ ] Bíblia: 66 livros / 1.189 capítulos / 31.098 versículos.
 - [ ] Busca por texto e referências.
@@ -85,6 +98,7 @@ Chegar a uma versão estável somente depois de completar as funcionalidades pla
 - [ ] Leitura em voz alta, compartilhamento nativo e lembretes locais.
 - [ ] Modo Púlpito e manter tela ligada.
 - [ ] Aparência, foco, contraste e espaçamento.
+- [ ] Backup/restauração e persistência após fechar/reabrir o app.
 
 ## 1.17.x — Polimento
 
