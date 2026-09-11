@@ -162,7 +162,7 @@ public class MainActivity extends Activity {
 
     private String installedVersionName() {
         try { return getPackageManager().getPackageInfo(getPackageName(), 0).versionName; }
-        catch (Exception ignored) { return "1.15.10"; }
+        catch (Exception ignored) { return "1.16.0"; }
     }
 
     private PendingIntent reminderPendingIntent(int requestCode, String title, String text) {
