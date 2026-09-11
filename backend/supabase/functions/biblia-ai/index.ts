@@ -1,4 +1,4 @@
-// Bíblia EBD 1.15.0 — proxy seguro para OpenAI Responses API.
+// Bíblia EBD 1.15.1 — proxy seguro para OpenAI Responses API.
 // Segredos exigidos no ambiente Supabase: OPENAI_API_KEY e BIBLIA_EBD_AI_ACCESS_TOKEN.
 const CORS={
   'Access-Control-Allow-Origin':'*',
@@ -8,7 +8,7 @@ const CORS={
 };
 const MAX_QUESTION=4000;
 const MAX_CONTEXT=16000;
-const ACTIONS=new Set(['ask','explain','summary','context','outline','ebd']);
+const ACTIONS=new Set(['check','ask','explain','summary','context','outline','ebd']);
 
 function json(data:unknown,status=200){return new Response(JSON.stringify(data),{status,headers:CORS})}
 function clean(value:unknown,max:number){return String(value??'').trim().slice(0,max)}
@@ -49,9 +49,12 @@ Deno.serve(async(req:Request)=>{
   let body:any;
   try{body=await req.json()}catch(_){return json({message:'Requisição inválida.'},400)}
   const action=clean(body?.action,24);
+  if(!ACTIONS.has(action))return json({message:'Ação inválida.'},400);
+  if(action==='check')return json({ok:true,configured:true,model});
+
   const question=clean(body?.question,MAX_QUESTION);
   const mode=clean(body?.mode,24)==='Professor'?'Professor':'Aluno';
-  if(!ACTIONS.has(action)||!question)return json({message:'Pergunta ou ação inválida.'},400);
+  if(!question)return json({message:'Pergunta inválida.'},400);
   const c=body?.context&&typeof body.context==='object'?body.context:null;
   const context=c?{
     kind:clean(c.kind,64),title:clean(c.title,240),reference:clean(c.reference,160),text:clean(c.text,MAX_CONTEXT)
