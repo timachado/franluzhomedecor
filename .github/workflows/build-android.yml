@@ -76,7 +76,6 @@ jobs:
           with open('app/src/main/assets/harpa-data.js','w',encoding='utf-8') as f:
               f.write('window.HARPA_CATALOG_V18='); json.dump(catalog,f,ensure_ascii=False,separators=(',',':')); f.write(';\n')
 
-          # Edição pública: nunca incluir letras privadas da Harpa.
           with open('app/src/main/assets/harpa-lyrics-user.js','w',encoding='utf-8') as f:
               f.write('window.HARPA_LYRICS_USER={};\n')
           print('Bíblia:',len(books),'livros,',chapter_count,'capítulos,',verse_count,'versículos')
@@ -117,6 +116,10 @@ jobs:
           grep -q "versionName '1.14.1'" app/build.gradle
           grep -q 'signingConfig signingConfigs.debug' app/build.gradle
           grep -qx 'window.HARPA_LYRICS_USER={};' app/src/main/assets/harpa-lyrics-user.js
+          grep -q '640 hinos • catálogo' app/src/main/assets/index.html
+          grep -q "location.href='privacy.html'" app/src/main/assets/index.html
+          grep -q 'Política de Privacidade' app/src/main/assets/privacy.html
+          ! grep -q 'android.permission.INTERNET' app/src/main/AndroidManifest.xml
           grep -q 'height:100dvh!important' app/src/main/assets/v1136.css
           grep -q 'setTextZoom(108)' app/src/main/java/com/timachado/bibliaebd/MainActivity.java
           grep -q 'if ("false".equalsIgnoreCase(value)) { finish(); return; }' app/src/main/java/com/timachado/bibliaebd/MainActivity.java
