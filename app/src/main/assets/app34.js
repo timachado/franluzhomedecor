@@ -73,14 +73,16 @@
     const rows=normalizeRows(false);return {total:rows.length,favs:rows.filter(x=>x.favorite).length,folders:new Set(rows.map(x=>x.folder)).size};
   }
   function folderOptions(selected){return folders().map(f=>`<option ${f===selected?'selected':''}>${esc(f)}</option>`).join('')}
+  function emptyHtml(){return '<div class="v11510-empty"><span>🗂️</span><strong>Nenhum esboço neste filtro</strong><p>Crie com IA, faça um esboço manual ou altere os filtros acima.</p></div>'}
+  function listHtml(){const rows=filtered();return rows.length?rows.map(cardHtml).join(''):emptyHtml()}
   function libraryHtml(){
-    const rows=filtered(),s=stats(),fs=folders();
+    const s=stats(),fs=folders();
     return `<section class="v11510-library" id="outlineLibrary11510">
       <div class="v11510-head"><div><span>BIBLIOTECA DE ESBOÇOS</span><h2>Seus roteiros organizados</h2><p>Edite, duplique, favorite e separe por pastas. Tudo salvo neste aparelho e incluído no backup local.</p></div><button id="newManualOutline11510">＋ Novo manual</button></div>
       <div class="v11510-stats"><div><b>${s.total}</b><small>esboços</small></div><div><b>${s.favs}</b><small>favoritos</small></div><div><b>${s.folders}</b><small>pastas usadas</small></div></div>
       <div class="v11510-search"><span>🔎</span><input id="outlineSearch11510" value="${esc(ui.query)}" placeholder="Buscar título, referência ou conteúdo..."><button id="newFolder11510">＋ Pasta</button></div>
       <div class="v11510-filters"><button data-folder11510="all" class="${ui.folder==='all'?'active':''}">Todos</button>${fs.map(f=>`<button data-folder11510="${esc(f)}" class="${ui.folder===f?'active':''}">${esc(f)}</button>`).join('')}<button id="favOnly11510" class="${ui.favorites?'active':''}">★ Favoritos</button></div>
-      <div class="v11510-list">${rows.length?rows.map(cardHtml).join(''):`<div class="v11510-empty"><span>🗂️</span><strong>Nenhum esboço neste filtro</strong><p>Crie com IA, faça um esboço manual ou altere os filtros acima.</p></div>`}</div>
+      <div class="v11510-list">${listHtml()}</div>
     </section>`;
   }
   function cardHtml(r){
@@ -98,6 +100,11 @@
       <label>Conteúdo<textarea class="field" id="outlineText11510" rows="16" placeholder="Introdução, pontos, aplicações e conclusão...">${esc(r.text||'')}</textarea></label>
       <div class="editor-actions"><button id="saveOutline11510" class="primary">✓ Salvar alterações</button><button id="copyEditor11510">📋 Copiar</button><button id="shareEditor11510">↗ Compartilhar</button></div>
     </div></div>`;
+  }
+  function refreshVisibleList(){
+    const list=document.querySelector('#outlineLibrary11510 .v11510-list');
+    if(list)list.innerHTML=listHtml();
+    bindCardActions();
   }
   function refreshLibrary(){
     const old=document.getElementById('outlineLibrary11510');if(old)old.outerHTML=libraryHtml();
@@ -130,18 +137,21 @@
     const list=folders();if(list.some(x=>norm(x)===norm(name)))return toastMsg('Essa pasta já existe.');
     list.push(name);saveFolders(list);ui.folder=name;refreshLibrary();toastMsg('Pasta criada 🗂️');
   }
-  function bindLibrary(){
-    const search=document.getElementById('outlineSearch11510');if(search&&search.dataset.bound!=='1'){search.dataset.bound='1';search.oninput=()=>{ui.query=search.value;refreshLibrary()}}
-    document.querySelectorAll('[data-folder11510]').forEach(b=>b.onclick=()=>{ui.folder=b.dataset.folder11510||'all';refreshLibrary()});
-    document.getElementById('favOnly11510')?.addEventListener('click',()=>{ui.favorites=!ui.favorites;refreshLibrary()});
-    document.getElementById('newFolder11510')?.addEventListener('click',addFolder);
-    document.getElementById('newManualOutline11510')?.addEventListener('click',newManual);
+  function bindCardActions(){
     document.querySelectorAll('[data-edit-outline11510]').forEach(b=>b.onclick=()=>openEditor(b.dataset.editOutline11510));
     document.querySelectorAll('[data-dup-outline11510]').forEach(b=>b.onclick=()=>duplicate(b.dataset.dupOutline11510));
     document.querySelectorAll('[data-fav-outline11510]').forEach(b=>b.onclick=()=>toggleFavorite(b.dataset.favOutline11510));
     document.querySelectorAll('[data-copy-outline11510]').forEach(b=>b.onclick=()=>{const r=findRow(b.dataset.copyOutline11510);if(!r)return;navigator.clipboard?.writeText(recordText(r)).then(()=>toastMsg('Esboço copiado 📋'))});
     document.querySelectorAll('[data-share-outline11510]').forEach(b=>b.onclick=()=>{const r=findRow(b.dataset.shareOutline11510);if(r)share(recordText(r),'Esboço • Bíblia EBD')});
     document.querySelectorAll('[data-del-outline11510]').forEach(b=>b.onclick=()=>removeOutline(b.dataset.delOutline11510));
+  }
+  function bindLibrary(){
+    const search=document.getElementById('outlineSearch11510');if(search&&search.dataset.bound!=='1'){search.dataset.bound='1';search.oninput=()=>{ui.query=search.value;refreshVisibleList()}}
+    document.querySelectorAll('[data-folder11510]').forEach(b=>b.onclick=()=>{ui.folder=b.dataset.folder11510||'all';refreshLibrary()});
+    document.getElementById('favOnly11510')?.addEventListener('click',()=>{ui.favorites=!ui.favorites;refreshLibrary()});
+    document.getElementById('newFolder11510')?.addEventListener('click',addFolder);
+    document.getElementById('newManualOutline11510')?.addEventListener('click',newManual);
+    bindCardActions();
   }
   function bindEditor(){
     document.getElementById('closeOutlineEditor11510')?.addEventListener('click',closeEditor);
