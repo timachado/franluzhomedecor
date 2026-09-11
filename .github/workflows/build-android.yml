@@ -1,4 +1,4 @@
-name: Build Bíblia EBD Android — 1.15.9 Busca Inteligente
+name: Build Bíblia EBD Android — 1.15.10 Biblioteca de Esboços
 
 on:
   push:
@@ -70,32 +70,33 @@ jobs:
           print('Bíblia', chapters, verses_total, 'Harpa', len(catalog))
           PY
 
-      - name: Validar 1.15.9
+      - name: Validar 1.15.10
         shell: bash
         run: |
           set -euo pipefail
-          for f in stability1141.js app20.js app21.js app22.js app23.js app24.js app25.js app26.js app27.js app28.js app29.js app30.js app31.js app32.js app33.js; do node --check "app/src/main/assets/$f"; done
+          for f in stability1141.js app20.js app21.js app22.js app23.js app24.js app25.js app26.js app27.js app28.js app29.js app30.js app31.js app32.js app33.js app34.js; do node --check "app/src/main/assets/$f"; done
           python3 - <<'PY'
           from pathlib import Path
           s=Path('app/src/main/assets/index.html').read_text(encoding='utf-8')
-          assert s.index('app32.js') < s.index('app33.js')
-          assert 'v1159.css' in s and 'app33.js' in s
-          a=Path('app/src/main/assets/app33.js').read_text(encoding='utf-8')
-          c=Path('app/src/main/assets/v1159.css').read_text(encoding='utf-8')
-          assert '__EBD_SMART_1159__' in a
-          assert 'BUSCA LOCAL • 31.098 VERSÍCULOS' in a
-          assert 'Dicionário Bíblico + Português' in a
-          assert 'Atlas de estudo offline' in a
-          assert "id:'ansiedade'" in a and "id:'paulo'" in a
-          assert 'buildBibleIndex' in a and 'fullText' in a
-          assert 'Perguntar à IA' in a
-          assert 'v1159-search-hero' in c and 'v1159-place-grid' in c and 'v1159-dict-list' in c
+          assert s.index('app33.js') < s.index('app34.js')
+          assert 'v11510.css' in s and 'app34.js' in s
+          a=Path('app/src/main/assets/app34.js').read_text(encoding='utf-8')
+          c=Path('app/src/main/assets/v11510.css').read_text(encoding='utf-8')
+          assert '__EBD_OUTLINES_11510__' in a
+          assert 'BIBLIOTECA DE ESBOÇOS' in a
+          assert 'Novo manual' in a and 'Duplicar' in a and 'Favoritos' in a
+          assert 'ebd-outline-folders-v11510' in a
+          assert 'saveEditor' in a and 'toggleFavorite' in a and 'duplicate' in a
+          assert 'v11510-library' in c and 'v11510-editor' in c
           assert 'OPENAI_API_KEY' not in a
           g=Path('app/build.gradle').read_text(encoding='utf-8')
-          assert 'versionCode 118' in g and "versionName '1.15.9'" in g
+          assert 'versionCode 119' in g and "versionName '1.15.10'" in g
+          m=Path('app/src/main/java/com/timachado/bibliaebd/MainActivity.java').read_text(encoding='utf-8')
+          assert 'return "1.15.10";' in m
           PY
+          grep -q '__EBD_SMART_1159__' app/src/main/assets/app33.js
           grep -q '__EBD_NATIVE_1158__' app/src/main/assets/app32.js
-          grep -q '__EBD_CLASS_AI_1157__' app/src/main/assets/app31.js
+          grep -q '__EBD_AI_EBD_1156__' app/src/main/assets/app30.js
           grep -q '__EBD_READER_1155__' app/src/main/assets/app29.js
           grep -q 'font-size:1em!important' app/src/main/assets/v1155.css
           grep -qx 'window.HARPA_LYRICS_USER={};' app/src/main/assets/harpa-lyrics-user.js
@@ -110,8 +111,8 @@ jobs:
         shell: bash
         run: |
           mkdir -p /tmp/biblia-main
-          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-main/Biblia-EBD-1.15.9-Busca-Inteligente-Tecnica.apk
-          cp app/build/outputs/bundle/debug/app-debug.aab /tmp/biblia-main/Biblia-EBD-1.15.9-Busca-Inteligente-Tecnica.aab
+          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-main/Biblia-EBD-1.15.10-Biblioteca-Esbocos-Tecnica.apk
+          cp app/build/outputs/bundle/debug/app-debug.aab /tmp/biblia-main/Biblia-EBD-1.15.10-Biblioteca-Esbocos-Tecnica.aab
 
       - name: Preparar Diagnóstico lado a lado
         shell: bash
@@ -134,29 +135,29 @@ jobs:
           APK=app/build/outputs/apk/debug/app-debug.apk
           AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
           "$AAPT" dump badging "$APK" | tee /tmp/badging.txt
-          grep -q "package: name='com.timachado.bibliaebd.diag' versionCode='118' versionName='1.15.9-teste'" /tmp/badging.txt
+          grep -q "package: name='com.timachado.bibliaebd.diag' versionCode='119' versionName='1.15.10-teste'" /tmp/badging.txt
           grep -q "application-label:'Bíblia EBD Diagnóstico'" /tmp/badging.txt
-          unzip -p "$APK" assets/index.html | grep -q 'app33.js'
-          unzip -p "$APK" assets/app33.js | grep -q 'Busca Inteligente'
-          unzip -p "$APK" assets/v1159.css | grep -q 'v1159-place-grid'
+          unzip -p "$APK" assets/index.html | grep -q 'app34.js'
+          unzip -p "$APK" assets/app34.js | grep -q 'BIBLIOTECA DE ESBOÇOS'
+          unzip -p "$APK" assets/v11510.css | grep -q 'v11510-editor'
           unzip -p "$APK" assets/harpa-lyrics-user.js | grep -qx 'window.HARPA_LYRICS_USER={};'
 
       - name: Guardar Diagnóstico
         shell: bash
         run: |
           mkdir -p /tmp/biblia-diag
-          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.15.9-Busca-Inteligente.apk
+          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.15.10-Biblioteca-Esbocos.apk
 
       - name: Publicar técnico
         uses: actions/upload-artifact@v4
         with:
-          name: Biblia-EBD-Android-1.15.9-Busca-Inteligente-Tecnica
+          name: Biblia-EBD-Android-1.15.10-Biblioteca-Esbocos-Tecnica
           path: /tmp/biblia-main/*
           retention-days: 14
 
       - name: Publicar Diagnóstico
         uses: actions/upload-artifact@v4
         with:
-          name: Biblia-EBD-Diagnostico-1.15.9-Busca-Inteligente
-          path: /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.15.9-Busca-Inteligente.apk
+          name: Biblia-EBD-Diagnostico-1.15.10-Biblioteca-Esbocos
+          path: /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.15.10-Biblioteca-Esbocos.apk
           retention-days: 14
