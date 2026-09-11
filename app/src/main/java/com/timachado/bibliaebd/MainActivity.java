@@ -46,7 +46,7 @@ public class MainActivity extends Activity {
         webView.setBackgroundColor(DARK);
         webView.setAlpha(0.01f);
         webView.setVerticalScrollBarEnabled(true);
-        webView.setOverScrollMode(View.OVER_SCROLL_IF_CONTENT_SCROLLIFS);
+        webView.setOverScrollMode(View.OVER_SCROLL_IF_CONTENT_SCROLLS);
         webView.setFocusable(true);
         webView.setFocusableInTouchMode(true);
         root.addView(webView, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
