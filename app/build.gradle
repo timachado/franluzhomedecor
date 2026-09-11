@@ -10,8 +10,8 @@ android {
         applicationId 'com.timachado.bibliaebd'
         minSdk 24
         targetSdk 36
-        versionCode 116
-        versionName '1.15.7'
+        versionCode 117
+        versionName '1.15.8'
     }
 
     signingConfigs {
