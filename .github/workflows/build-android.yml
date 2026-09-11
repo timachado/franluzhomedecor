@@ -1,4 +1,4 @@
-name: Build Bíblia EBD Android — 1.16.1 Notificações
+name: Build Bíblia EBD Android — 1.16.2 Regressão Guiada
 
 on:
   push:
@@ -70,7 +70,7 @@ jobs:
           print('Bíblia',chapters,verses,'Harpa catálogo',len(catalog))
           PY
 
-      - name: Preparar versão 1.16.1 sem regravar credenciais históricas
+      - name: Preparar versão 1.16.2 sem regravar credenciais históricas
         shell: bash
         run: |
           set -euo pipefail
@@ -78,36 +78,35 @@ jobs:
           import re
           from pathlib import Path
           p=Path('app/build.gradle'); s=p.read_text(encoding='utf-8')
-          s=re.sub(r'versionCode\s+\d+','versionCode 121',s,count=1)
-          s=re.sub(r"versionName\s+'[^']+'","versionName '1.16.1'",s,count=1)
+          s=re.sub(r'versionCode\s+\d+','versionCode 122',s,count=1)
+          s=re.sub(r"versionName\s+'[^']+'","versionName '1.16.2'",s,count=1)
           p.write_text(s,encoding='utf-8')
           PY
 
-      - name: Validar 1.16.1 — regressão e notificações
+      - name: Validar 1.16.2 — regressão guiada
         shell: bash
         run: |
           set -euo pipefail
-          for f in stability1141.js app20.js app21.js app22.js app23.js app24.js app25.js app26.js app27.js app28.js app29.js app30.js app31.js app32.js app33.js app34.js app35.js app36.js; do node --check "app/src/main/assets/$f"; done
+          for f in stability1141.js app20.js app21.js app22.js app23.js app24.js app25.js app26.js app27.js app28.js app29.js app30.js app31.js app32.js app33.js app34.js app35.js app36.js app37.js; do node --check "app/src/main/assets/$f"; done
           python3 - <<'PY'
           from pathlib import Path
           import re
           idx=Path('app/src/main/assets/index.html').read_text(encoding='utf-8')
-          assert idx.index('app34.js') < idx.index('app35.js') < idx.index('app36.js')
-          assert 'v1160.css' in idx and 'v1161.css' in idx
-          a=Path('app/src/main/assets/app35.js').read_text(encoding='utf-8')
+          assert idx.index('app35.js') < idx.index('app36.js') < idx.index('app37.js')
+          assert 'v1160.css' in idx and 'v1161.css' in idx and 'v1162.css' in idx
+          d=Path('app/src/main/assets/app35.js').read_text(encoding='utf-8')
           n=Path('app/src/main/assets/app36.js').read_text(encoding='utf-8')
-          c=Path('app/src/main/assets/v1161.css').read_text(encoding='utf-8')
-          assert "startsWith('1.16.')" in a
-          assert 'data-diag-id' in a and '__EBD_DIAGNOSTICS_1160__' in a
+          g=Path('app/src/main/assets/app37.js').read_text(encoding='utf-8')
+          c=Path('app/src/main/assets/v1162.css').read_text(encoding='utf-8')
+          assert '__EBD_DIAGNOSTICS_1160__' in d
           assert '__EBD_NOTIFICATIONS_1161__' in n
-          assert 'Ativar notificações' in n and 'requestNotificationPermission' in n
-          assert 'v1161-notif-action' in c
-          assert 'OPENAI_API_KEY' not in a+n
-          g=Path('app/build.gradle').read_text(encoding='utf-8')
-          assert 'versionCode 121' in g and "versionName '1.16.1'" in g
-          m=Path('app/src/main/java/com/timachado/bibliaebd/MainActivity.java').read_text(encoding='utf-8')
-          assert 'return "1.16.1";' in m
-          assert 'onRequestPermissionsResult' in m and '__EBD_NOTIFICATIONS_1161__' in m
+          assert '__EBD_GUIDED_1162__' in g
+          assert 'Regressão guiada 1.16.2' in g and 'Abrir recurso' in g and 'Aprovado' in g and 'Falhou' in g
+          assert 'ebd-guided-regression-v1162' in g and 'ebd-guided-active-v1162' in g
+          assert 'v1162-guided' in c and 'v1162-return' in c
+          assert 'OPENAI_API_KEY' not in d+n+g
+          gradle=Path('app/build.gradle').read_text(encoding='utf-8')
+          assert 'versionCode 122' in gradle and "versionName '1.16.2'" in gradle
           ebd=Path('app/src/main/assets/app12.js').read_text(encoding='utf-8')
           block=ebd.split('const EBD_LESSONS_110 = [',1)[1].split('];',1)[0]
           assert len(re.findall(r'\{n:\d+,date:',block))==13
@@ -129,8 +128,8 @@ jobs:
         shell: bash
         run: |
           mkdir -p /tmp/biblia-main
-          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-main/Biblia-EBD-1.16.1-Notificacoes-Tecnica.apk
-          cp app/build/outputs/bundle/debug/app-debug.aab /tmp/biblia-main/Biblia-EBD-1.16.1-Notificacoes-Tecnica.aab
+          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-main/Biblia-EBD-1.16.2-Regressao-Guiada-Tecnica.apk
+          cp app/build/outputs/bundle/debug/app-debug.aab /tmp/biblia-main/Biblia-EBD-1.16.2-Regressao-Guiada-Tecnica.aab
 
       - name: Preparar Diagnóstico lado a lado
         shell: bash
@@ -144,36 +143,36 @@ jobs:
       - name: Gerar APK Diagnóstico
         run: gradle --no-daemon clean assembleDebug
 
-      - name: Validar APK Diagnóstico 1.16.1
+      - name: Validar APK Diagnóstico 1.16.2
         shell: bash
         run: |
           set -euo pipefail
           APK=app/build/outputs/apk/debug/app-debug.apk
           AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
           "$AAPT" dump badging "$APK" | tee /tmp/badging.txt
-          grep -q "package: name='com.timachado.bibliaebd.diag' versionCode='121' versionName='1.16.1-teste'" /tmp/badging.txt
+          grep -q "package: name='com.timachado.bibliaebd.diag' versionCode='122' versionName='1.16.2-teste'" /tmp/badging.txt
           grep -q "application-label:'Bíblia EBD Diagnóstico'" /tmp/badging.txt
-          unzip -p "$APK" assets/index.html | grep -q 'app36.js'
-          unzip -p "$APK" assets/app36.js | grep -q '__EBD_NOTIFICATIONS_1161__'
-          unzip -p "$APK" assets/v1161.css | grep -q 'v1161-notif-action'
+          unzip -p "$APK" assets/index.html | grep -q 'app37.js'
+          unzip -p "$APK" assets/app37.js | grep -q '__EBD_GUIDED_1162__'
+          unzip -p "$APK" assets/v1162.css | grep -q 'v1162-guided'
           unzip -p "$APK" assets/harpa-lyrics-user.js | grep -qx 'window.HARPA_LYRICS_USER={};'
 
       - name: Guardar Diagnóstico
         shell: bash
         run: |
           mkdir -p /tmp/biblia-diag
-          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.16.1-Notificacoes.apk
+          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.16.2-Regressao-Guiada.apk
 
       - name: Publicar técnico
         uses: actions/upload-artifact@v4
         with:
-          name: Biblia-EBD-Android-1.16.1-Notificacoes-Tecnica
+          name: Biblia-EBD-Android-1.16.2-Regressao-Guiada-Tecnica
           path: /tmp/biblia-main/*
           retention-days: 14
 
       - name: Publicar Diagnóstico
         uses: actions/upload-artifact@v4
         with:
-          name: Biblia-EBD-Diagnostico-1.16.1-Notificacoes
-          path: /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.16.1-Notificacoes.apk
+          name: Biblia-EBD-Diagnostico-1.16.2-Regressao-Guiada
+          path: /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.16.2-Regressao-Guiada.apk
           retention-days: 14
