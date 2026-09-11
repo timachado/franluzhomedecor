@@ -91,7 +91,7 @@ public class MainActivity extends Activity {
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
         settings.setSupportZoom(false);
-        settings.setTextZoom(108);
+        settings.setTextZoom(112);
         settings.setUseWideViewPort(true);
         settings.setLoadWithOverviewMode(false);
         settings.setMediaPlaybackRequiresUserGesture(true);
@@ -162,7 +162,7 @@ public class MainActivity extends Activity {
 
     private String installedVersionName() {
         try { return getPackageManager().getPackageInfo(getPackageName(), 0).versionName; }
-        catch (Exception ignored) { return "1.16.1"; }
+        catch (Exception ignored) { return "1.17.0"; }
     }
 
     private PendingIntent reminderPendingIntent(int requestCode, String title, String text) {
@@ -187,6 +187,12 @@ public class MainActivity extends Activity {
         @JavascriptInterface public void setKeepScreenOn(boolean enabled) { runOnUiThread(() -> { if (enabled) getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON); else getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON); }); }
         @JavascriptInterface public void shareText(String text, String title) { runOnUiThread(() -> { try { Intent send = new Intent(Intent.ACTION_SEND); send.setType("text/plain"); send.putExtra(Intent.EXTRA_TEXT, text); send.putExtra(Intent.EXTRA_SUBJECT, title); startActivity(Intent.createChooser(send, "Compartilhar")); } catch (Exception ignored) {} }); }
         @JavascriptInterface public boolean isSpeechReady() { return ttsReady && tts != null; }
+        @JavascriptInterface public void setTextScale(int percent) {
+            final int safe = Math.max(90, Math.min(160, percent));
+            runOnUiThread(() -> {
+                if (webView != null) webView.getSettings().setTextZoom(safe);
+            });
+        }
 
         @JavascriptInterface public boolean speakText(String text) {
             if (!ttsReady || tts == null || text == null || text.trim().isEmpty()) return false;
