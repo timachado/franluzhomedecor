@@ -1,4 +1,4 @@
-name: Build Bíblia EBD Android — 1.17.0 Escala Global
+name: Build Bíblia EBD Android — 1.17.1 Hotfix Escala
 
 on:
   push:
@@ -70,7 +70,7 @@ jobs:
           print('Bíblia',chapters,verses,'Harpa catálogo',len(catalog))
           PY
 
-      - name: Preparar versão 1.17.0 sem regravar credenciais históricas
+      - name: Preparar versão 1.17.1 sem regravar credenciais históricas
         shell: bash
         run: |
           set -euo pipefail
@@ -78,12 +78,12 @@ jobs:
           import re
           from pathlib import Path
           p=Path('app/build.gradle'); s=p.read_text(encoding='utf-8')
-          s=re.sub(r'versionCode\s+\d+','versionCode 123',s,count=1)
-          s=re.sub(r"versionName\s+'[^']+'","versionName '1.17.0'",s,count=1)
+          s=re.sub(r'versionCode\s+\d+','versionCode 124',s,count=1)
+          s=re.sub(r"versionName\s+'[^']+'","versionName '1.17.1'",s,count=1)
           p.write_text(s,encoding='utf-8')
           PY
 
-      - name: Validar 1.17.0 — escala global e regressão preservada
+      - name: Validar 1.17.1 — hotfix da escala e regressão preservada
         shell: bash
         run: |
           set -euo pipefail
@@ -93,24 +93,25 @@ jobs:
           import re
           idx=Path('app/src/main/assets/index.html').read_text(encoding='utf-8')
           assert idx.index('app35.js') < idx.index('app36.js') < idx.index('app37.js') < idx.index('app38.js')
-          assert 'v1160.css' in idx and 'v1161.css' in idx and 'v1162.css' in idx and 'v1170.css' in idx
+          assert 'v1170.css' in idx
           a=Path('app/src/main/assets/app38.js').read_text(encoding='utf-8')
           c=Path('app/src/main/assets/v1170.css').read_text(encoding='utf-8')
           assert '__EBD_UI_SCALE_1170__' in a
-          assert 'ebd-ui-scale-v1170' in a
-          for n in ('100','112','125','140'): assert n in a
-          assert 'Tamanho do aplicativo' in a and 'Aparência e Leitura' not in a
-          assert 'setTextScale' in a
-          assert 'v1170-scale-140' in c and 'v1170-scale-row' in c
+          assert 'const LEVELS=[100,112,120,125]' in a
+          assert 'if(n===140)return 125' in a
+          assert 'lastNativeScale' in a and 'lastNativeScale!==scale' in a
+          assert "#globalScale1170 [data-ui-scale1170]" in a
+          assert 'event.stopPropagation()' in a
+          assert 'v1170-scale-120' in c and 'v1170-scale-125' in c
+          assert '#analyzeBackup1142' in c
+          assert 'v1170-scale-140 button' not in c
           assert '__EBD_GUIDED_1162__' in Path('app/src/main/assets/app37.js').read_text(encoding='utf-8')
           assert '__EBD_DIAGNOSTICS_1160__' in Path('app/src/main/assets/app35.js').read_text(encoding='utf-8')
           assert 'OPENAI_API_KEY' not in a
           gradle=Path('app/build.gradle').read_text(encoding='utf-8')
-          assert 'versionCode 123' in gradle and "versionName '1.17.0'" in gradle
+          assert 'versionCode 124' in gradle and "versionName '1.17.1'" in gradle
           main=Path('app/src/main/java/com/timachado/bibliaebd/MainActivity.java').read_text(encoding='utf-8')
-          assert 'return "1.17.0";' in main
-          assert 'setTextScale(int percent)' in main
-          assert 'setTextZoom(112)' in main
+          assert 'setTextScale(int percent)' in main and 'setTextZoom(112)' in main
           ebd=Path('app/src/main/assets/app12.js').read_text(encoding='utf-8')
           block=ebd.split('const EBD_LESSONS_110 = [',1)[1].split('];',1)[0]
           assert len(re.findall(r'\{n:\d+,date:',block))==13
@@ -132,8 +133,8 @@ jobs:
         shell: bash
         run: |
           mkdir -p /tmp/biblia-main
-          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-main/Biblia-EBD-1.17.0-Escala-Global-Tecnica.apk
-          cp app/build/outputs/bundle/debug/app-debug.aab /tmp/biblia-main/Biblia-EBD-1.17.0-Escala-Global-Tecnica.aab
+          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-main/Biblia-EBD-1.17.1-Hotfix-Escala-Tecnica.apk
+          cp app/build/outputs/bundle/debug/app-debug.aab /tmp/biblia-main/Biblia-EBD-1.17.1-Hotfix-Escala-Tecnica.aab
 
       - name: Preparar Diagnóstico lado a lado
         shell: bash
@@ -147,36 +148,36 @@ jobs:
       - name: Gerar APK Diagnóstico
         run: gradle --no-daemon clean assembleDebug
 
-      - name: Validar APK Diagnóstico 1.17.0
+      - name: Validar APK Diagnóstico 1.17.1
         shell: bash
         run: |
           set -euo pipefail
           APK=app/build/outputs/apk/debug/app-debug.apk
           AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
           "$AAPT" dump badging "$APK" | tee /tmp/badging.txt
-          grep -q "package: name='com.timachado.bibliaebd.diag' versionCode='123' versionName='1.17.0-teste'" /tmp/badging.txt
+          grep -q "package: name='com.timachado.bibliaebd.diag' versionCode='124' versionName='1.17.1-teste'" /tmp/badging.txt
           grep -q "application-label:'Bíblia EBD Diagnóstico'" /tmp/badging.txt
-          unzip -p "$APK" assets/index.html | grep -q 'app38.js'
-          unzip -p "$APK" assets/app38.js | grep -q '__EBD_UI_SCALE_1170__'
-          unzip -p "$APK" assets/v1170.css | grep -q 'v1170-scale-row'
+          unzip -p "$APK" assets/app38.js | grep -q 'lastNativeScale'
+          unzip -p "$APK" assets/app38.js | grep -q 'const LEVELS=\[100,112,120,125\]'
+          unzip -p "$APK" assets/v1170.css | grep -q '#analyzeBackup1142'
           unzip -p "$APK" assets/harpa-lyrics-user.js | grep -qx 'window.HARPA_LYRICS_USER={};'
 
       - name: Guardar Diagnóstico
         shell: bash
         run: |
           mkdir -p /tmp/biblia-diag
-          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.17.0-Escala-Global.apk
+          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.17.1-Hotfix-Escala.apk
 
       - name: Publicar técnico
         uses: actions/upload-artifact@v4
         with:
-          name: Biblia-EBD-Android-1.17.0-Escala-Global-Tecnica
+          name: Biblia-EBD-Android-1.17.1-Hotfix-Escala-Tecnica
           path: /tmp/biblia-main/*
           retention-days: 14
 
       - name: Publicar Diagnóstico
         uses: actions/upload-artifact@v4
         with:
-          name: Biblia-EBD-Diagnostico-1.17.0-Escala-Global
-          path: /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.17.0-Escala-Global.apk
+          name: Biblia-EBD-Diagnostico-1.17.1-Hotfix-Escala
+          path: /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.17.1-Hotfix-Escala.apk
           retention-days: 14
