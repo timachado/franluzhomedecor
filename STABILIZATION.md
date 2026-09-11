@@ -71,7 +71,7 @@ Chegar a uma versão estável somente depois de completar as funcionalidades pla
 
 ## 1.16.x — Regressão completa dos recursos
 
-### 1.16.0 — Central de Diagnóstico
+### 1.16.0 / 1.16.1 — Central de Diagnóstico
 
 - [x] Criar Central de Diagnóstico dentro do app, sem apagar ou substituir dados do usuário.
 - [x] Verificar automaticamente contagem e leitura da Bíblia, parser de referência, Busca Inteligente, Dicionário e Atlas.
@@ -80,7 +80,17 @@ Chegar a uma versão estável somente depois de completar as funcionalidades pla
 - [x] Criar teste separado da conexão da IA sem incluir código de acesso, notas ou histórico no relatório.
 - [x] Criar checklist manual para os fluxos que exigem interação real no aparelho.
 - [x] Permitir compartilhar relatório de diagnóstico sem conteúdo pessoal.
-- [ ] Executar a Central de Diagnóstico na build completa 1.16.0 em aparelho real e corrigir qualquer falha encontrada.
+- [x] Executar a Central de Diagnóstico em aparelho real; usuário confirmou todos os indicadores verdes na 1.16.1.
+- [x] Adicionar ação direta para autorizar notificações e atualizar o diagnóstico após a resposta do Android.
+
+### 1.16.2 — Regressão guiada
+
+- [x] Criar fluxo guiado por módulo com botão para abrir o recurso em teste.
+- [x] Permitir marcar cada módulo como Aprovado ou Falhou e registrar uma observação curta em caso de falha.
+- [x] Manter um atalho visível para voltar ao checklist enquanto um teste estiver ativo.
+- [x] Salvar o progresso do checklist localmente entre telas e reinicializações.
+- [x] Gerar relatório do teste guiado sem incluir notas bíblicas, alunos, histórico da IA ou códigos privados.
+- [ ] Executar os 12 testes guiados no aparelho real e corrigir qualquer falha encontrada.
 
 ### Regressão funcional em aparelho
 
