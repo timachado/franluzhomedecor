@@ -1,0 +1,7 @@
+/* 1.16.1 — permissão de notificações no Diagnóstico */
+.v1160-result[data-diag-id="notification"]{position:relative;flex-wrap:wrap}
+.v1161-notif-action{width:100%;margin:12px 0 0 64px;padding-top:12px;border-top:1px solid rgba(148,163,184,.12);display:flex;gap:10px;align-items:center;justify-content:space-between}
+.v1161-notif-action small{flex:1;color:#aeb8cc;font-size:11px;line-height:1.5}
+.v1161-notif-action button{border:1px solid rgba(250,204,21,.30);background:rgba(250,204,21,.10);color:#fde68a;border-radius:14px;padding:10px 12px;min-height:42px;font-size:12px;font-weight:900;white-space:nowrap}
+.v1161-notif-action button:disabled{opacity:.55}
+@media(max-width:420px){.v1161-notif-action{margin-left:0;flex-direction:column;align-items:stretch}.v1161-notif-action button{width:100%}}
