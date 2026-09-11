@@ -1,8 +1,17 @@
-// 1.15.4 — fixa o contexto atual em follow-ups, mas permite trocar ao digitar nova referência.
+// 1.15.5 — contexto contínuo da IA + correção real do tamanho de fonte da Bíblia.
 (function(){
   'use strict';
   const previousRender=window.render;
   const previousBind=window.bind;
+
+  function ensureReaderCss1155(){
+    if(document.getElementById('v1155ReaderCss'))return;
+    const link=document.createElement('link');
+    link.id='v1155ReaderCss';
+    link.rel='stylesheet';
+    link.href='v1155.css';
+    document.head.appendChild(link);
+  }
 
   function attach1154ContextPin(){
     if(typeof state==='undefined'||state.route!=='ai115')return;
@@ -27,8 +36,25 @@
     },true);
   }
 
-  window.render=function(){previousRender();requestAnimationFrame(attach1154ContextPin)};
-  window.bind=function(){previousBind();attach1154ContextPin()};
+  function readerFontFeedback1155(){
+    if(typeof state==='undefined'||state.route!=='reader')return;
+    const pct=Math.max(90,Math.min(125,Number(state.studyFontV19||100)));
+    const down=document.getElementById('fontDown19');
+    const up=document.getElementById('fontUp19');
+    if(down)down.setAttribute('aria-label',`Diminuir tamanho da Bíblia. Atual ${pct}%`);
+    if(up)up.setAttribute('aria-label',`Aumentar tamanho da Bíblia. Atual ${pct}%`);
+  }
+
+  function post1155(){
+    ensureReaderCss1155();
+    attach1154ContextPin();
+    readerFontFeedback1155();
+  }
+
+  window.render=function(){previousRender();requestAnimationFrame(post1155)};
+  window.bind=function(){previousBind();post1155()};
   window.__EBD_AI_1154_CONTEXT__=Object.freeze({attach:attach1154ContextPin});
+  window.__EBD_READER_1155__=Object.freeze({ensureCss:ensureReaderCss1155});
+  ensureReaderCss1155();
   window.render();
 })();
