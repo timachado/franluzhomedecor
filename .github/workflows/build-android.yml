@@ -1,4 +1,4 @@
-name: Build Bíblia EBD Android — 1.15.4 IA
+name: Build Bíblia EBD Android — 1.15.5 Fonte + Harpa Base
 
 on:
   push:
@@ -74,13 +74,14 @@ jobs:
               catalog.append({'n':n,'title':title})
           with open('app/src/main/assets/harpa-data.js','w',encoding='utf-8') as f:
               f.write('window.HARPA_CATALOG_V18='); json.dump(catalog,f,ensure_ascii=False,separators=(',',':')); f.write(';\n')
+          # O CI público/técnico nunca recebe a base privada de letras.
           with open('app/src/main/assets/harpa-lyrics-user.js','w',encoding='utf-8') as f:
               f.write('window.HARPA_LYRICS_USER={};\n')
           print('Bíblia:',len(books),'livros,',chapter_count,'capítulos,',verse_count,'versículos')
-          print('Harpa:',len(catalog),'títulos; letras privadas: 0')
+          print('Harpa:',len(catalog),'títulos; letras privadas no CI: 0')
           PY
 
-      - name: Preparar versão interna 1.15.4
+      - name: Preparar versão interna 1.15.5
         shell: bash
         run: |
           set -euo pipefail
@@ -89,14 +90,14 @@ jobs:
           from pathlib import Path
           p=Path('app/build.gradle')
           s=p.read_text(encoding='utf-8')
-          s=re.sub(r'versionCode\s+\d+','versionCode 113',s,count=1)
-          s=re.sub(r"versionName\s+'[^']+'","versionName '1.15.4'",s,count=1)
-          if 'versionCode 113' not in s or "versionName '1.15.4'" not in s:
-              raise SystemExit('Falha ao preparar 1.15.4 / 113')
+          s=re.sub(r'versionCode\s+\d+','versionCode 114',s,count=1)
+          s=re.sub(r"versionName\s+'[^']+'","versionName '1.15.5'",s,count=1)
+          if 'versionCode 114' not in s or "versionName '1.15.5'" not in s:
+              raise SystemExit('Falha ao preparar 1.15.5 / 114')
           p.write_text(s,encoding='utf-8')
           PY
 
-      - name: Validar 1.15.4 — continuidade IA e regressão estrutural
+      - name: Validar 1.15.5 — fonte Bíblia e regressão estrutural
         shell: bash
         run: |
           set -euo pipefail
@@ -116,37 +117,27 @@ jobs:
           s=Path('app/src/main/assets/index.html').read_text(encoding='utf-8')
           assert s.index('stability1141.js') < s.index('app1.js')
           assert s.index('app23.js') < s.index('app24.js') < s.index('app25.js') < s.index('app26.js') < s.index('app27.js') < s.index('app28.js') < s.index('app29.js')
-          assert all(x in s for x in ['v115.css','v1151.css','v1152.css','v1153.css','v1154.css'])
           ai=Path('app/src/main/assets/app24.js').read_text(encoding='utf-8')
-          cont=Path('app/src/main/assets/app28.js').read_text(encoding='utf-8')
           pin=Path('app/src/main/assets/app29.js').read_text(encoding='utf-8')
-          css=Path('app/src/main/assets/v1154.css').read_text(encoding='utf-8')
-          backend=Path('backend/supabase/functions/biblia-ai/index.ts').read_text(encoding='utf-8')
-          assert 'OPENAI_API_KEY' not in ai+cont+pin
-          assert '__EBD_AI_1154__' in cont
+          css=Path('app/src/main/assets/v1155.css').read_text(encoding='utf-8')
+          assert 'OPENAI_API_KEY' not in ai+pin
           assert '__EBD_AI_1154_CONTEXT__' in pin
-          assert 'ebd-ai-studies-v1154' in cont
-          assert 'Novo estudo' in cont and 'Histórico' in cont
-          assert 'Salvar conversa' in cont and 'Gerar e salvar esboço' in cont
-          assert 'history:previous' in cont
-          assert 'detectReference' in pin and '_study1154' in pin
-          assert 'historyUsed' in backend and 'cleanHistory' in backend
-          assert 'ai1154-studybar' in css and 'ai1154-history' in css
-          assert '--ai1153-font:17px' in Path('app/src/main/assets/v1153.css').read_text(encoding='utf-8')
+          assert '__EBD_READER_1155__' in pin
+          assert "link.href='v1155.css'" in pin
+          assert '.v19-verses .v18-verse p' in css
+          assert 'font-size:1em!important' in css
+          assert '#fontDown19,#fontUp19' in css
+          assert 'ebd-ai-studies-v1154' in Path('app/src/main/assets/app28.js').read_text(encoding='utf-8')
           assert 'REFERÊNCIA DETECTADA' in Path('app/src/main/assets/app26.js').read_text(encoding='utf-8')
           assert 'Estudar com IA' in ai
           PY
           grep -q '__EBD_STABILITY_1141__' app/src/main/assets/stability1141.js
           grep -q '__EBD_BACKUP_1142__' app/src/main/assets/app23.js
-          grep -q '__EBD_AI_115__' app/src/main/assets/app24.js
-          grep -q '__EBD_AI_1151__' app/src/main/assets/app25.js
-          grep -q '__EBD_AI_1152__' app/src/main/assets/app26.js
-          grep -q '__EBD_AI_1153__' app/src/main/assets/app27.js
           grep -q '__EBD_AI_1154__' app/src/main/assets/app28.js
-          grep -q '__EBD_AI_1154_CONTEXT__' app/src/main/assets/app29.js
-          grep -q 'versionCode 113' app/build.gradle
-          grep -q "versionName '1.15.4'" app/build.gradle
-          grep -q 'return "1.15.4";' app/src/main/java/com/timachado/bibliaebd/MainActivity.java
+          grep -q '__EBD_READER_1155__' app/src/main/assets/app29.js
+          grep -q 'versionCode 114' app/build.gradle
+          grep -q "versionName '1.15.5'" app/build.gradle
+          grep -q 'return "1.15.5";' app/src/main/java/com/timachado/bibliaebd/MainActivity.java
           grep -q 'height:100dvh!important' app/src/main/assets/v1136.css
           grep -q 'setTextZoom(108)' app/src/main/java/com/timachado/bibliaebd/MainActivity.java
           grep -qx 'window.HARPA_LYRICS_USER={};' app/src/main/assets/harpa-lyrics-user.js
@@ -161,8 +152,8 @@ jobs:
         shell: bash
         run: |
           mkdir -p /tmp/biblia-main
-          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-main/Biblia-EBD-1.15.4-IA-Estudos-Continuos-Tecnica.apk
-          cp app/build/outputs/bundle/debug/app-debug.aab /tmp/biblia-main/Biblia-EBD-1.15.4-IA-Estudos-Continuos-Tecnica.aab
+          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-main/Biblia-EBD-1.15.5-Fonte-Biblica-Tecnica.apk
+          cp app/build/outputs/bundle/debug/app-debug.aab /tmp/biblia-main/Biblia-EBD-1.15.5-Fonte-Biblica-Tecnica.aab
 
       - name: Preparar Diagnóstico lado a lado
         shell: bash
@@ -181,41 +172,39 @@ jobs:
           r.write_text(x,encoding='utf-8')
           PY
 
-      - name: Gerar APK Diagnóstico 1.15.4
+      - name: Gerar APK Diagnóstico 1.15.5
         run: gradle --no-daemon clean assembleDebug
 
-      - name: Validar APK Diagnóstico 1.15.4
+      - name: Validar APK Diagnóstico 1.15.5
         shell: bash
         run: |
           set -euo pipefail
           APK=app/build/outputs/apk/debug/app-debug.apk
           AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
           "$AAPT" dump badging "$APK" | tee /tmp/diag-badging.txt
-          grep -q "package: name='com.timachado.bibliaebd.diag' versionCode='113' versionName='1.15.4-teste'" /tmp/diag-badging.txt
+          grep -q "package: name='com.timachado.bibliaebd.diag' versionCode='114' versionName='1.15.5-teste'" /tmp/diag-badging.txt
           grep -q "application-label:'Bíblia EBD Diagnóstico'" /tmp/diag-badging.txt
           unzip -p "$APK" assets/index.html | grep -q 'app29.js'
-          unzip -p "$APK" assets/index.html | grep -q 'v1154.css'
-          unzip -p "$APK" assets/app28.js | grep -q '__EBD_AI_1154__'
-          unzip -p "$APK" assets/app29.js | grep -q '__EBD_AI_1154_CONTEXT__'
-          unzip -p "$APK" assets/app28.js | grep -q 'Gerar e salvar esboço'
+          unzip -p "$APK" assets/app29.js | grep -q '__EBD_READER_1155__'
+          unzip -p "$APK" assets/v1155.css | grep -q 'font-size:1em!important'
           unzip -p "$APK" assets/harpa-lyrics-user.js | grep -qx 'window.HARPA_LYRICS_USER={};'
 
       - name: Guardar Diagnóstico
         shell: bash
         run: |
           mkdir -p /tmp/biblia-diag
-          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.15.4-IA-Estudos-Continuos.apk
+          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.15.5-Fonte-Biblica-Base.apk
 
       - name: Publicar artefatos técnicos internos
         uses: actions/upload-artifact@v4
         with:
-          name: Biblia-EBD-Android-1.15.4-IA-Estudos-Continuos-Tecnica
+          name: Biblia-EBD-Android-1.15.5-Fonte-Biblica-Tecnica
           path: /tmp/biblia-main/*
           retention-days: 14
 
-      - name: Publicar Diagnóstico instalável lado a lado
+      - name: Publicar Diagnóstico base instalável lado a lado
         uses: actions/upload-artifact@v4
         with:
-          name: Biblia-EBD-Diagnostico-1.15.4-IA-Estudos-Continuos
-          path: /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.15.4-IA-Estudos-Continuos.apk
+          name: Biblia-EBD-Diagnostico-1.15.5-Fonte-Biblica-Base
+          path: /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.15.5-Fonte-Biblica-Base.apk
           retention-days: 14
