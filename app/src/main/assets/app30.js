@@ -92,7 +92,6 @@
   function injectEbd(){
     if(!['ebd','lesson'].includes(state.route))return;
     const app=document.getElementById('app');if(!app)return;
-    // Remove o atalho pequeno anterior para não duplicar a nova Central.
     document.getElementById('openAiEbd115')?.remove();
     if(document.getElementById('aiTeacherCenter1156')||document.getElementById('aiStudentEbd1156'))return;
     const html=roleIsProfessor()?teacherCenterHtml():studentEbdHtml();
@@ -122,8 +121,9 @@
       if(!topic)return toastMsg('Digite um tema ou referência para o esboço.');
       let context=null;
       try{
-        const detector=window.__EBD_AI_1152__?.detectReference;
-        if(typeof detector==='function')context=detector(topic);
+        const api=window.__EBD_AI_1152__;
+        const parsed=typeof api?.detectReference==='function'?api.detectReference(topic):null;
+        context=parsed&&typeof api?.contextFromRef==='function'?api.contextFromRef(parsed):null;
       }catch(_){}
       openAi('outline',outlinePrompt(type,topic),context||null);
     });
