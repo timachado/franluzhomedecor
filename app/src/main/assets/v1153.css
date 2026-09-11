@@ -1,0 +1,51 @@
+:root{--ai1153-font:17px;--ai1153-line:1.72}
+html.ai1153-small{--ai1153-font:15px;--ai1153-line:1.68}
+html.ai1153-normal{--ai1153-font:17px;--ai1153-line:1.72}
+html.ai1153-large{--ai1153-font:20px;--ai1153-line:1.76}
+
+/* Leitura principal das respostas */
+.ai115-msg.assistant{width:100%;gap:10px}
+.ai115-msg.assistant .ai115-bubble{max-width:calc(100% - 40px);width:100%;padding:15px 16px;border-radius:16px}
+.ai115-msg.user .ai115-bubble{max-width:88%;padding:12px 14px}
+.ai115-bubble>small{font-size:11px!important;line-height:1.35;color:#9ca6bf!important}
+.ai115-bubble p{font-size:var(--ai1153-font)!important;line-height:var(--ai1153-line)!important;letter-spacing:.005em;color:#e3e8f4!important;margin:8px 0 0!important;overflow-wrap:anywhere}
+.ai115-bubble p strong{font-weight:800;color:#fff!important}
+
+/* Markdown simples formatado com segurança pelo app27 */
+.ai1153-heading{display:block;font-size:1.08em;line-height:1.38;font-weight:900;color:#fff;margin:1.15em 0 .45em;padding-top:.1em}
+.ai1153-heading:first-child{margin-top:.2em}
+.ai1153-quote{display:block;margin:.75em 0;padding:.65em .8em;border-left:3px solid #8b5cf6;background:rgba(139,92,246,.08);border-radius:0 10px 10px 0;color:#eef0ff;font-style:italic}
+.ai1152-bullet{display:block;padding-left:1.15em;position:relative;margin:.38em 0;line-height:inherit}
+
+/* Controles de tamanho */
+.ai1153-readerbar{display:flex;align-items:center;gap:8px;margin:12px 0;padding:10px 12px;border-radius:14px;background:#0f1528;border:1px solid rgba(148,163,184,.13)}
+.ai1153-readerbar .label{display:flex;flex:1;min-width:0;align-items:center;gap:8px}
+.ai1153-readerbar .label span{font-size:18px}
+.ai1153-readerbar .label div{min-width:0}
+.ai1153-readerbar .label strong{display:block;font-size:12px;color:#f4f6ff}
+.ai1153-readerbar .label small{display:block;font-size:10px;color:#8f98b1;margin-top:2px}
+.ai1153-readerbar button{min-width:40px;height:38px;border-radius:10px;border:1px solid rgba(167,139,250,.18);background:#171e35;color:#eef2ff;font-size:14px;font-weight:800}
+.ai1153-readerbar button:active{transform:scale(.97)}
+.ai1153-readerbar .pct{min-width:46px;text-align:center;font-size:11px;font-weight:800;color:#c4b5fd}
+
+/* Botões das mensagens passam a ter alvo de toque confortável */
+.ai115-msg-actions{gap:7px!important;margin-top:13px!important}
+.ai115-msg-actions button{min-height:38px;padding:8px 10px!important;font-size:11px!important}
+
+/* Pergunta e textos auxiliares da tela também mais legíveis */
+.ai115-question{font-size:16px!important;line-height:1.55!important;min-height:110px!important}
+.ai115-compose>label{font-size:11px!important}
+.ai115-send-row span{font-size:10px!important;line-height:1.35}
+.ai115-context strong{font-size:13px!important}
+.ai115-context p{font-size:12px!important;line-height:1.55!important}
+.ai115-context small{font-size:9px!important;line-height:1.35}
+.ai115-privacy strong{font-size:12px!important}
+.ai115-privacy p{font-size:11px!important;line-height:1.55!important}
+
+@media(max-width:380px){
+  :root{--ai1153-font:16px}
+  html.ai1153-large{--ai1153-font:19px}
+  .ai115-msg.assistant .ai115-bubble{max-width:calc(100% - 34px);padding:14px}
+  .ai1153-readerbar{gap:5px;padding:9px}
+  .ai1153-readerbar button{min-width:36px}
+}
