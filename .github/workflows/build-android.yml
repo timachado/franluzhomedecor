@@ -1,4 +1,4 @@
-name: Build Bíblia EBD Android — 1.15.6 Professor IA
+name: Build Bíblia EBD Android — 1.15.7 Turma IA
 
 on:
   push:
@@ -70,30 +70,33 @@ jobs:
           print('Bíblia', chapters, verses_total, 'Harpa', len(catalog))
           PY
 
-      - name: Validar 1.15.6
+      - name: Validar 1.15.7
         shell: bash
         run: |
           set -euo pipefail
-          for f in stability1141.js app20.js app21.js app22.js app23.js app24.js app25.js app26.js app27.js app28.js app29.js app30.js; do node --check "app/src/main/assets/$f"; done
+          for f in stability1141.js app20.js app21.js app22.js app23.js app24.js app25.js app26.js app27.js app28.js app29.js app30.js app31.js; do node --check "app/src/main/assets/$f"; done
           python3 - <<'PY'
           from pathlib import Path
           s=Path('app/src/main/assets/index.html').read_text(encoding='utf-8')
           assert s.index('stability1141.js') < s.index('app1.js')
-          assert s.index('app29.js') < s.index('app30.js')
-          assert 'v1156.css' in s and 'app30.js' in s
-          a=Path('app/src/main/assets/app30.js').read_text(encoding='utf-8')
-          c=Path('app/src/main/assets/v1156.css').read_text(encoding='utf-8')
-          b=Path('backend/supabase/functions/biblia-ai/index.ts').read_text(encoding='utf-8')
-          assert '__EBD_AI_EBD_1156__' in a
-          assert 'CENTRAL IA DO PROFESSOR' in a
-          assert 'Plano completo' in a and 'Dinâmica' in a and 'Aplicações' in a
-          assert 'Esboços com IA' in a and 'contextFromRef' in a
-          assert 'ai1156-teacher' in c and 'ai1156-outline-hub' in c
-          assert 'teacherEbd' in b and 'Cronograma' in b
+          assert s.index('app30.js') < s.index('app31.js')
+          assert 'v1157.css' in s and 'app31.js' in s
+          a=Path('app/src/main/assets/app31.js').read_text(encoding='utf-8')
+          c=Path('app/src/main/assets/v1157.css').read_text(encoding='utf-8')
+          assert '__EBD_CLASS_AI_1157__' in a
+          assert 'ASSISTENTE DA TURMA' in a
+          assert 'IA DA CHAMADA' in a and 'IA DA AGENDA' in a
+          assert 'nenhum nome de aluno foi incluído' in a
+          assert 'Observações e textos livres da agenda não foram enviados' in a
+          assert 'classMessage' in a and 'attendanceAnalysis' in a and 'agendaPlan' in a
+          assert 'ai1157-panel' in c and 'ai1157-privacy' in c
           assert 'OPENAI_API_KEY' not in a
           g=Path('app/build.gradle').read_text(encoding='utf-8')
-          assert 'versionCode 115' in g and "versionName '1.15.6'" in g
+          assert 'versionCode 116' in g and "versionName '1.15.7'" in g
+          m=Path('app/src/main/java/com/timachado/bibliaebd/MainActivity.java').read_text(encoding='utf-8')
+          assert 'return "1.15.7";' in m
           PY
+          grep -q '__EBD_AI_EBD_1156__' app/src/main/assets/app30.js
           grep -q '__EBD_READER_1155__' app/src/main/assets/app29.js
           grep -q 'font-size:1em!important' app/src/main/assets/v1155.css
           grep -qx 'window.HARPA_LYRICS_USER={};' app/src/main/assets/harpa-lyrics-user.js
@@ -108,8 +111,8 @@ jobs:
         shell: bash
         run: |
           mkdir -p /tmp/biblia-main
-          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-main/Biblia-EBD-1.15.6-Professor-IA-Tecnica.apk
-          cp app/build/outputs/bundle/debug/app-debug.aab /tmp/biblia-main/Biblia-EBD-1.15.6-Professor-IA-Tecnica.aab
+          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-main/Biblia-EBD-1.15.7-Turma-IA-Tecnica.apk
+          cp app/build/outputs/bundle/debug/app-debug.aab /tmp/biblia-main/Biblia-EBD-1.15.7-Turma-IA-Tecnica.aab
 
       - name: Preparar Diagnóstico lado a lado
         shell: bash
@@ -132,29 +135,29 @@ jobs:
           APK=app/build/outputs/apk/debug/app-debug.apk
           AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
           "$AAPT" dump badging "$APK" | tee /tmp/badging.txt
-          grep -q "package: name='com.timachado.bibliaebd.diag' versionCode='115' versionName='1.15.6-teste'" /tmp/badging.txt
+          grep -q "package: name='com.timachado.bibliaebd.diag' versionCode='116' versionName='1.15.7-teste'" /tmp/badging.txt
           grep -q "application-label:'Bíblia EBD Diagnóstico'" /tmp/badging.txt
-          unzip -p "$APK" assets/index.html | grep -q 'app30.js'
-          unzip -p "$APK" assets/app30.js | grep -q 'CENTRAL IA DO PROFESSOR'
-          unzip -p "$APK" assets/v1156.css | grep -q 'ai1156-teacher'
+          unzip -p "$APK" assets/index.html | grep -q 'app31.js'
+          unzip -p "$APK" assets/app31.js | grep -q 'IA DA CHAMADA'
+          unzip -p "$APK" assets/v1157.css | grep -q 'ai1157-panel'
           unzip -p "$APK" assets/harpa-lyrics-user.js | grep -qx 'window.HARPA_LYRICS_USER={};'
 
       - name: Guardar Diagnóstico
         shell: bash
         run: |
           mkdir -p /tmp/biblia-diag
-          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.15.6-Professor-IA.apk
+          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.15.7-Turma-IA.apk
 
       - name: Publicar técnico
         uses: actions/upload-artifact@v4
         with:
-          name: Biblia-EBD-Android-1.15.6-Professor-IA-Tecnica
+          name: Biblia-EBD-Android-1.15.7-Turma-IA-Tecnica
           path: /tmp/biblia-main/*
           retention-days: 14
 
       - name: Publicar Diagnóstico
         uses: actions/upload-artifact@v4
         with:
-          name: Biblia-EBD-Diagnostico-1.15.6-Professor-IA
-          path: /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.15.6-Professor-IA.apk
+          name: Biblia-EBD-Diagnostico-1.15.7-Turma-IA
+          path: /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.15.7-Turma-IA.apk
           retention-days: 14
