@@ -34,13 +34,9 @@
   }
   function openAi(action,question,context){
     const api=window.__EBD_AI_115__;
-    const ctx=context||lessonContext1156();
-    if(api?.openWithContext){
-      api.openWithContext(ctx,action||'ebd',question||'');
-      return;
-    }
-    state.ai115=state.ai115||{};state.ai115.context=ctx;state.ai115.action=action||'ebd';state.ai115.question=question||'';
-    nav('ai115');
+    const ctx=arguments.length>=3?context:lessonContext1156();
+    if(api?.openWithContext){api.openWithContext(ctx,action||'ebd',question||'');return}
+    state.ai115=state.ai115||{};state.ai115.context=ctx;state.ai115.action=action||'ebd';state.ai115.question=question||'';nav('ai115');
   }
   function roleIsProfessor(){return state.userMode==='Professor'||state.profileV16?.role==='Professor'}
   function getPrefs(){return Object.assign({duration:45,audience:'Adultos'},safeJson(localStorage.getItem(EBD_PREF_KEY),{}))}
@@ -125,7 +121,7 @@
         const parsed=typeof api?.detectReference==='function'?api.detectReference(topic):null;
         context=parsed&&typeof api?.contextFromRef==='function'?api.contextFromRef(parsed):null;
       }catch(_){}
-      openAi('outline',outlinePrompt(type,topic),context||null);
+      openAi('outline',outlinePrompt(type,topic),context);
     });
   }
   function injectOutlines(){
