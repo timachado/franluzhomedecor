@@ -1,4 +1,4 @@
-// Bíblia EBD 1.15.4 — proxy seguro para OpenAI Responses API com continuidade local.
+// Bíblia EBD 1.15.6 — proxy seguro para OpenAI Responses API com continuidade local e modo Professor/EBD.
 // Segredos exigidos no ambiente Supabase: OPENAI_API_KEY e BIBLIA_EBD_AI_ACCESS_TOKEN.
 const CORS={
   'Access-Control-Allow-Origin':'*',
@@ -22,8 +22,8 @@ function actionInstruction(action:string,mode:string){
     explain:'Explique a passagem com mensagem central, contexto imediato, pontos-chave e aplicação prática.',
     summary:'Produza um resumo fiel e conciso, seguido de pontos essenciais.',
     context:'Explique contexto histórico e literário apenas até onde houver base; sinalize claramente inferências.',
-    outline:'Crie um esboço de estudo/pregação com título, texto-base, introdução, três pontos, aplicação e conclusão. Se houver histórico, incorpore os pontos úteis já discutidos.',
-    ebd:'Crie um roteiro de aula EBD com objetivos, introdução, desenvolvimento, perguntas, dinâmica simples e aplicação.'
+    outline:'Crie um esboço de estudo/pregação com título, texto-base, introdução, três pontos, aplicação e conclusão. Se houver histórico, incorpore os pontos úteis já discutidos. Mantenha estrutura pronta para copiar, compartilhar ou salvar.',
+    ebd:mode==='Professor'?'Prepare material de professor em formato prático. Quando o pedido for um plano de aula, organize por: Objetivos, Cronograma, Abertura, Leitura bíblica, Desenvolvimento, Perguntas para a classe, Dinâmica, Aplicação e Encerramento. Respeite a duração e o público informados na pergunta.':'Ajude o aluno a compreender a lição com ideia central, explicação do texto-base, pontos-chave, perguntas de reflexão e aplicação prática.'
   };
   return `${base}\n\nTarefa: ${task[action]||task.ask}`;
 }
@@ -54,7 +54,7 @@ Deno.serve(async(req:Request)=>{
   const apiKey=Deno.env.get('OPENAI_API_KEY')||'';
   const accessExpected=Deno.env.get('BIBLIA_EBD_AI_ACCESS_TOKEN')||'';
   const model=Deno.env.get('OPENAI_MODEL')||'gpt-5.6-luna';
-  if(req.method==='GET')return json({online:true,configured:!!apiKey&&!!accessExpected,model:apiKey?model:null,continuity:true});
+  if(req.method==='GET')return json({online:true,configured:!!apiKey&&!!accessExpected,model:apiKey?model:null,continuity:true,teacherEbd:true});
   if(req.method!=='POST')return json({message:'Método não permitido.'},405);
   if(!apiKey||!accessExpected)return json({message:'Assistente IA ainda não foi configurado no servidor.'},503);
   const access=req.headers.get('x-biblia-access')||'';
@@ -64,7 +64,7 @@ Deno.serve(async(req:Request)=>{
   try{body=await req.json()}catch(_){return json({message:'Requisição inválida.'},400)}
   const action=clean(body?.action,24);
   if(!ACTIONS.has(action))return json({message:'Ação inválida.'},400);
-  if(action==='check')return json({ok:true,configured:true,model,continuity:true});
+  if(action==='check')return json({ok:true,configured:true,model,continuity:true,teacherEbd:true});
 
   const question=clean(body?.question,MAX_QUESTION);
   const mode=clean(body?.mode,24)==='Professor'?'Professor':'Aluno';
@@ -88,7 +88,7 @@ Deno.serve(async(req:Request)=>{
         model,
         store:false,
         reasoning:{effort:'low'},
-        max_output_tokens:1600,
+        max_output_tokens:1800,
         instructions:actionInstruction(action,mode),
         input
       })
@@ -101,7 +101,7 @@ Deno.serve(async(req:Request)=>{
     }
     const answer=extractText(data);
     if(!answer)return json({message:'A IA respondeu sem texto utilizável.'},502);
-    return json({answer,model:data?.model||model,responseId:data?.id||null,historyUsed:history.length});
+    return json({answer,model:data?.model||model,responseId:data?.id||null,historyUsed:history.length,teacherEbd:action==='ebd'&&mode==='Professor'});
   }catch(err){
     console.error('biblia-ai error',String(err));
     return json({message:'Falha temporária ao conectar com o provedor de IA.'},502);
