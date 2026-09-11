@@ -34,29 +34,33 @@ Chegar a uma versão estável somente depois de completar as funcionalidades pla
 
 ### Assistente Bíblia EBD — IA
 
-- [ ] Criar uma tela própria de Assistente IA integrada ao visual do aplicativo.
-- [ ] Permitir iniciar a IA a partir de um versículo, seleção de versículos, capítulo, lição EBD ou esboço.
-- [ ] Explicar versículo e contexto sem substituir o texto bíblico original.
-- [ ] Resumir passagem ou capítulo.
-- [ ] Responder perguntas sobre o texto usando a Bíblia disponível no app como contexto principal.
-- [ ] Gerar esboço de pregação/estudo a partir de tema ou referência.
-- [ ] Gerar perguntas, objetivos, aplicações e roteiro de aula para EBD.
-- [ ] Oferecer modos Aluno e Professor com respostas adequadas ao objetivo de cada perfil.
-- [ ] Permitir salvar uma resposta da IA como anotação, copiar e compartilhar.
-- [ ] Mostrar claramente o que é texto bíblico e o que é conteúdo gerado pela IA.
-- [ ] Exigir ação explícita do usuário antes de enviar conteúdo para a IA.
-- [ ] Nunca enviar notas, favoritos, histórico ou dados pessoais automaticamente.
-- [ ] Manter Bíblia, Harpa, EBD, notas e demais recursos funcionando offline quando a IA estiver indisponível.
-- [ ] Não armazenar chave secreta de provedor de IA dentro do APK; usar backend intermediário seguro.
-- [ ] Tratar ausência de internet, timeout, limite do serviço e falhas do backend sem travar o aplicativo.
+- [x] Criar uma tela própria de Assistente IA integrada ao visual do aplicativo.
+- [x] Permitir iniciar a IA a partir de um versículo, seleção de versículos, capítulo, lição EBD ou esboço.
+- [x] Explicar versículo e contexto sem substituir o texto bíblico original.
+- [x] Resumir passagem ou capítulo.
+- [x] Responder perguntas sobre o texto usando a Bíblia disponível no app como contexto principal.
+- [x] Gerar esboço de pregação/estudo a partir de tema ou referência.
+- [x] Gerar perguntas, objetivos, aplicações e roteiro de aula para EBD.
+- [x] Oferecer modos Aluno e Professor com respostas adequadas ao objetivo de cada perfil.
+- [x] Permitir salvar uma resposta da IA como anotação, copiar e compartilhar.
+- [x] Mostrar claramente o que é texto bíblico e o que é conteúdo gerado pela IA.
+- [x] Exigir ação explícita do usuário antes de enviar conteúdo para a IA.
+- [x] Nunca enviar notas, favoritos, histórico ou dados pessoais automaticamente.
+- [x] Manter Bíblia, Harpa, EBD, notas e demais recursos funcionando offline quando a IA estiver indisponível.
+- [x] Não armazenar chave secreta de provedor de IA dentro do APK; usar backend intermediário seguro.
+- [x] Tratar ausência de internet, timeout, limite do serviço e falhas do backend sem travar o aplicativo.
+- [x] Conversa contínua com histórico de estudos salvo localmente.
+- [x] Reconhecimento automático de referências bíblicas digitadas.
+- [x] Leitura confortável das respostas da IA com A− / A+.
+- [x] Central IA do Professor com duração de aula e público da classe.
 
 ### Recursos adicionais já previstos
 
-- [ ] Evoluir Esboços para salvar, editar, duplicar, organizar e exportar roteiros.
+- [ ] Evoluir Esboços para editar, duplicar e organizar roteiros; salvar/copiar/compartilhar já disponível.
 - [ ] Evoluir Atlas Bíblico com lugares, referências e navegação entre local e passagem.
 - [ ] Melhorar Dicionário Bíblico e Português e conectá-los ao fluxo de estudo.
 - [ ] Melhorar busca unificada e busca por linguagem natural.
-- [ ] Ampliar recursos do Professor: perguntas, dinâmica, plano de aula e material de apoio.
+- [x] Ampliar recursos do Professor: perguntas, dinâmica, plano de aula e material de apoio com IA.
 - [ ] Revisar experiência de Minha Turma, chamada, agenda e compartilhamento para classe.
 - [ ] Avaliar áudio/leitura em voz alta sem comprometer o modo offline.
 
@@ -70,9 +74,9 @@ Chegar a uma versão estável somente depois de completar as funcionalidades pla
 - [ ] Rotina, metas e planos de leitura.
 - [ ] EBD: 13 lições, Aluno/Professor, checklist, progresso e próxima aula.
 - [ ] Minha Turma, chamada e agenda.
-- [ ] Harpa privada: validar 640/640 somente no build privado.
+- [ ] Harpa Cristã completa: validar 640/640 no build que inclui as letras.
 - [ ] Dicionário, concordância, esboços, Atlas e Ministério & Estudo.
-- [ ] Assistente IA: contexto, respostas, salvamento e tratamento de falhas.
+- [ ] Assistente IA: contexto, respostas, salvamento, Professor/EBD e tratamento de falhas.
 - [ ] Modo Púlpito e manter tela ligada.
 - [ ] Aparência, foco, contraste e espaçamento.
 
