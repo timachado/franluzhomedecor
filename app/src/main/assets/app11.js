@@ -22,7 +22,7 @@ function lyric191(n){ const h=hymnPrivate191(n); return String(h?.lyrics || '');
 function privateTitle191(n){ const h=hymnPrivate191(n); return String(h?.title || ''); }
 function harpaReady191(){ return Array.from({length:640},(_,i)=>i+1).every(n=>lyric191(n).trim().length>0); }
 function lyricHtml191(text){
-  if(!text)return '<div class="v191-no-lyric">Letra não encontrada neste arquivo pessoal.</div>';
+  if(!text)return '<div class="v191-no-lyric">Letra não disponível nesta compilação. O catálogo de números e títulos continua funcionando.</div>';
   return text.split(/\n\s*\n/).map((stanza,idx)=>`<div class="v191-stanza" data-stanza="${idx+1}">${stanza.split('\n').filter(Boolean).map(line=>`<div>${esc18(line)}</div>`).join('')}</div>`).join('');
 }
 function hymnSearchMatch191(h,q){
@@ -32,12 +32,12 @@ function hymnSearchMatch191(h,q){
 }
 
 harpa18 = function(){
-  const raw=String(state.harpaQueryV18||''), q=norm18(raw);
+  const raw=String(state.harpaQueryV18||''), q=norm18(raw), complete=harpaReady191();
   let list=harpaCatalogV18.filter(h=>hymnSearchMatch191(h,raw));
   const total=list.length, show=q?list.slice(0,180):list.slice(0,state.harpaLimitV18);
-  return `<div class="pagehead"><button class="back" data-back>‹</button><div><h1>Harpa Cristã</h1><p>640 hinos com letras para seu uso particular.</p></div></div>
-  <section class="v191-harpa-hero"><div class="v191-harpa-icon">🎵</div><div><span>HARPA COMPLETA • OFFLINE</span><h2>640 hinos com letras</h2><p>Conteúdo importado do arquivo pessoal enviado por você.</p></div><b>${harpaReady191()?'✓':'!'}</b></section>
-  <div class="v18-harpa-search"><span>🔎</span><input class="field" id="harpaSearch18" value="${esc18(raw)}" placeholder="Número, título ou palavra da letra..."></div>
+  return `<div class="pagehead"><button class="back" data-back>‹</button><div><h1>Harpa Cristã</h1><p>${complete?'640 hinos com letras para seu uso particular.':'640 hinos no catálogo offline desta compilação.'}</p></div></div>
+  <section class="v191-harpa-hero"><div class="v191-harpa-icon">🎵</div><div><span>${complete?'HARPA COMPLETA • OFFLINE':'HARPA • CATÁLOGO OFFLINE'}</span><h2>${complete?'640 hinos com letras':'640 números e títulos'}</h2><p>${complete?'Conteúdo importado do arquivo pessoal enviado por você.':'As letras privadas não estão presentes nesta compilação de teste.'}</p></div><b>${complete?'✓':'i'}</b></section>
+  <div class="v18-harpa-search"><span>🔎</span><input class="field" id="harpaSearch18" value="${esc18(raw)}" placeholder="${complete?'Número, título ou palavra da letra...':'Número ou título do hino...'}"></div>
   <div class="v191-harpa-actions"><button id="continueHymn191">▶️ Continuar no hino ${state.lastHymn191||1}</button><button id="hymnFavFilter18">❤️ ${state.hymnFavsV18.length} favoritos</button></div>
   <div class="v191-result-count">${total} resultado${total===1?'':'s'}${q?' para “'+esc18(raw)+'”':''}</div>
   <div id="harpaList18" class="v18-hymn-list v191-hymn-list">${hymnRows18(show)}</div>${!q&&state.harpaLimitV18<list.length?`<button class="v18-load-more" id="loadMoreHarpa18">Carregar mais hinos (${Math.min(80,list.length-state.harpaLimitV18)})</button>`:''}`;
@@ -49,9 +49,9 @@ hymnDetail18 = function(){
   const privateH=hymnPrivate191(h.n), lyrics=lyric191(h.n), title=privateH?.title||h.title, font=Math.max(90,Math.min(135,state.harpaFont191));
   state.lastHymn191=h.n; saveHarpa191();
   return `<div class="pagehead"><button class="back" data-route="harpa">‹</button><div><h1>Hino ${h.n}</h1><p>Harpa Cristã • leitura offline</p></div></div>
-  <section class="v191-hymn-head"><div class="v191-hymn-number">${h.n}</div><div><span>HARPA CRISTÃ</span><h1>${esc18(title)}</h1><small>Arquivo pessoal • uso particular</small></div></section>
+  <section class="v191-hymn-head"><div class="v191-hymn-number">${h.n}</div><div><span>HARPA CRISTÃ</span><h1>${esc18(title)}</h1><small>${lyrics?'Arquivo pessoal • uso particular':'Catálogo offline • compilação de teste'}</small></div></section>
   <div class="v191-hymn-toolbar"><button id="prevHymn191" ${h.n<=1?'disabled':''}>‹ Anterior</button><button id="favHymn18">${isHymnFav18(h.n)?'❤️ Favorito':'🤍 Favoritar'}</button><button id="nextHymn191" ${h.n>=640?'disabled':''}>Próximo ›</button></div>
-  <div class="v191-reading-tools"><button id="harpaFontDown191">A−</button><span>${font}%</span><button id="harpaFontUp191">A+</button><button id="copyHymn191">📋 Copiar</button></div>
+  <div class="v191-reading-tools"><button id="harpaFontDown191">A−</button><span>${font}%</span><button id="harpaFontUp191">A+</button>${lyrics?'<button id="copyHymn191">📋 Copiar</button>':''}</div>
   <article class="v191-lyrics" style="--harpa-font:${font}%">${lyricHtml191(lyrics)}</article>
   <div class="v191-hymn-bottom"><button id="prevHymnBottom191" ${h.n<=1?'disabled':''}>‹ Hino ${Math.max(1,h.n-1)}</button><button data-route="harpa">🎵 Todos os hinos</button><button id="nextHymnBottom191" ${h.n>=640?'disabled':''}>Hino ${Math.min(640,h.n+1)} ›</button></div>`;
 };
@@ -59,12 +59,14 @@ hymnDetail18 = function(){
 const _contentInfo18_private = contentInfo18;
 contentInfo18 = function(){
   const base=_contentInfo18_private();
+  if(!harpaReady191()) return base;
   return base.replace(/<section class="v18-info-card"><span>🎵<\/span>[\s\S]*?<\/section>/,
   `<section class="v18-info-card v191-private-source"><span>🎵</span><div><strong>Harpa Cristã • arquivo pessoal</strong><p>640 hinos com letras disponíveis offline nesta compilação particular.</p><small>As letras foram importadas do arquivo “Harpa Crista 640 para DataShow PowerPoint.rar” fornecido pelo proprietário do aplicativo para uso particular.</small></div></section>`);
 };
 
 function harpaHome191(){
-  return `<section class="section v191-home-harpa"><div class="v191-home-icon">🎵</div><div><span>HARPA COMPLETA</span><strong>640 hinos com letras</strong><small>Busca por número, título ou trecho • offline</small></div><button data-route="harpa">Abrir</button></section>`;
+  const complete=harpaReady191();
+  return `<section class="section v191-home-harpa"><div class="v191-home-icon">🎵</div><div><span>${complete?'HARPA COMPLETA':'HARPA CRISTÃ'}</span><strong>${complete?'640 hinos com letras':'640 hinos • catálogo'}</strong><small>${complete?'Busca por número, título ou trecho • offline':'Números e títulos disponíveis offline'}</small></div><button data-route="harpa">Abrir</button></section>`;
 }
 
 window.render=function(){
@@ -101,10 +103,10 @@ function bindV191(){
   $('#harpaFontUp191')?.addEventListener('click',()=>{state.harpaFont191=Math.min(135,state.harpaFont191+5);saveHarpa191();window.render();});
   $('#copyHymn191')?.addEventListener('click',()=>{
     const h=harpaCatalogV18.find(x=>x.n===Number(state.hymn)), p=hymnPrivate191(state.hymn);
-    if(h)copy18(`Harpa Cristã ${h.n} — ${p?.title||h.title}\n\n${lyric191(h.n)}`);
+    if(h&&lyric191(h.n))copy18(`Harpa Cristã ${h.n} — ${p?.title||h.title}\n\n${lyric191(h.n)}`);
   });
   const menuHarpa=[...document.querySelectorAll('.menu-item')].find(x=>x.dataset.route==='harpa');
-  if(menuHarpa){const s=menuHarpa.querySelector('small');if(s)s.textContent='640 hinos com letras';}
+  if(menuHarpa){const s=menuHarpa.querySelector('small');if(s)s.textContent=harpaReady191()?'640 hinos com letras':'640 hinos • catálogo';}
 }
 
 window.render();
