@@ -1,4 +1,4 @@
-name: Build Bíblia EBD Android — 1.15.10 Biblioteca de Esboços
+name: Build Bíblia EBD Android — 1.16.0 Regressão
 
 on:
   push:
@@ -66,38 +66,61 @@ jobs:
               catalog.append({'n':n,'title':re.sub(r'^\s*\d+\s*-\s*','',row['hino']).strip()})
           with open('app/src/main/assets/harpa-data.js','w',encoding='utf-8') as f:
               f.write('window.HARPA_CATALOG_V18='); json.dump(catalog,f,ensure_ascii=False,separators=(',',':')); f.write(';\n')
+          # O build técnico mantém somente o catálogo. A variante completa é montada fora do CI público/técnico.
           with open('app/src/main/assets/harpa-lyrics-user.js','w',encoding='utf-8') as f: f.write('window.HARPA_LYRICS_USER={};\n')
-          print('Bíblia', chapters, verses_total, 'Harpa', len(catalog))
+          print('Bíblia', chapters, verses_total, 'Harpa catálogo', len(catalog))
           PY
 
-      - name: Validar 1.15.10
+      - name: Preparar versão 1.16.0 sem regravar credenciais históricas
         shell: bash
         run: |
           set -euo pipefail
-          for f in stability1141.js app20.js app21.js app22.js app23.js app24.js app25.js app26.js app27.js app28.js app29.js app30.js app31.js app32.js app33.js app34.js; do node --check "app/src/main/assets/$f"; done
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          p=Path('app/build.gradle')
+          s=p.read_text(encoding='utf-8')
+          s=re.sub(r'versionCode\s+\d+','versionCode 120',s,count=1)
+          s=re.sub(r"versionName\s+'[^']+'","versionName '1.16.0'",s,count=1)
+          p.write_text(s,encoding='utf-8')
+          PY
+
+      - name: Validar 1.16.0 — regressão estrutural
+        shell: bash
+        run: |
+          set -euo pipefail
+          for f in stability1141.js app20.js app21.js app22.js app23.js app24.js app25.js app26.js app27.js app28.js app29.js app30.js app31.js app32.js app33.js app34.js app35.js; do node --check "app/src/main/assets/$f"; done
           python3 - <<'PY'
           from pathlib import Path
+          import re
           s=Path('app/src/main/assets/index.html').read_text(encoding='utf-8')
-          assert s.index('app33.js') < s.index('app34.js')
-          assert 'v11510.css' in s and 'app34.js' in s
-          a=Path('app/src/main/assets/app34.js').read_text(encoding='utf-8')
-          c=Path('app/src/main/assets/v11510.css').read_text(encoding='utf-8')
-          assert '__EBD_OUTLINES_11510__' in a
-          assert 'BIBLIOTECA DE ESBOÇOS' in a
-          assert 'Novo manual' in a and 'Duplicar' in a and 'Favoritos' in a
-          assert 'ebd-outline-folders-v11510' in a
-          assert 'saveEditor' in a and 'toggleFavorite' in a and 'duplicate' in a
-          assert 'v11510-library' in c and 'v11510-editor' in c
+          assert s.index('app34.js') < s.index('app35.js')
+          assert 'v1160.css' in s and 'app35.js' in s
+          assert 'data-route="diagnostics1160"' in s
+          a=Path('app/src/main/assets/app35.js').read_text(encoding='utf-8')
+          c=Path('app/src/main/assets/v1160.css').read_text(encoding='utf-8')
+          assert '__EBD_DIAGNOSTICS_1160__' in a
+          assert 'Bíblia completa' in a and 'Harpa — letras' in a and 'EBD trimestral' in a
+          assert 'Backup Seguro' in a and 'Integridade dos dados' in a
+          assert 'Teste online da IA' in a and 'Nenhum código privado' in a
+          assert 'v1160-result' in c and 'v1160-manual' in c
           assert 'OPENAI_API_KEY' not in a
+          assert 'biblia-ai-access-v115' in a
           g=Path('app/build.gradle').read_text(encoding='utf-8')
-          assert 'versionCode 119' in g and "versionName '1.15.10'" in g
+          assert 'versionCode 120' in g and "versionName '1.16.0'" in g
           m=Path('app/src/main/java/com/timachado/bibliaebd/MainActivity.java').read_text(encoding='utf-8')
-          assert 'return "1.15.10";' in m
+          assert 'return "1.16.0";' in m
+          ebd=Path('app/src/main/assets/app12.js').read_text(encoding='utf-8')
+          block=ebd.split('const EBD_LESSONS_110 = [',1)[1].split('];',1)[0]
+          assert len(re.findall(r'\{n:\d+,date:',block))==13
           PY
+          grep -q '__EBD_OUTLINES_11510__' app/src/main/assets/app34.js
           grep -q '__EBD_SMART_1159__' app/src/main/assets/app33.js
           grep -q '__EBD_NATIVE_1158__' app/src/main/assets/app32.js
+          grep -q '__EBD_CLASS_AI_1157__' app/src/main/assets/app31.js
           grep -q '__EBD_AI_EBD_1156__' app/src/main/assets/app30.js
           grep -q '__EBD_READER_1155__' app/src/main/assets/app29.js
+          grep -q '__EBD_BACKUP_1142__' app/src/main/assets/app23.js
           grep -q 'font-size:1em!important' app/src/main/assets/v1155.css
           grep -qx 'window.HARPA_LYRICS_USER={};' app/src/main/assets/harpa-lyrics-user.js
 
@@ -111,8 +134,8 @@ jobs:
         shell: bash
         run: |
           mkdir -p /tmp/biblia-main
-          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-main/Biblia-EBD-1.15.10-Biblioteca-Esbocos-Tecnica.apk
-          cp app/build/outputs/bundle/debug/app-debug.aab /tmp/biblia-main/Biblia-EBD-1.15.10-Biblioteca-Esbocos-Tecnica.aab
+          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-main/Biblia-EBD-1.16.0-Regressao-Tecnica.apk
+          cp app/build/outputs/bundle/debug/app-debug.aab /tmp/biblia-main/Biblia-EBD-1.16.0-Regressao-Tecnica.aab
 
       - name: Preparar Diagnóstico lado a lado
         shell: bash
@@ -128,36 +151,36 @@ jobs:
       - name: Gerar APK Diagnóstico
         run: gradle --no-daemon clean assembleDebug
 
-      - name: Validar APK Diagnóstico
+      - name: Validar APK Diagnóstico 1.16.0
         shell: bash
         run: |
           set -euo pipefail
           APK=app/build/outputs/apk/debug/app-debug.apk
           AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
           "$AAPT" dump badging "$APK" | tee /tmp/badging.txt
-          grep -q "package: name='com.timachado.bibliaebd.diag' versionCode='119' versionName='1.15.10-teste'" /tmp/badging.txt
+          grep -q "package: name='com.timachado.bibliaebd.diag' versionCode='120' versionName='1.16.0-teste'" /tmp/badging.txt
           grep -q "application-label:'Bíblia EBD Diagnóstico'" /tmp/badging.txt
-          unzip -p "$APK" assets/index.html | grep -q 'app34.js'
-          unzip -p "$APK" assets/app34.js | grep -q 'BIBLIOTECA DE ESBOÇOS'
-          unzip -p "$APK" assets/v11510.css | grep -q 'v11510-editor'
+          unzip -p "$APK" assets/index.html | grep -q 'app35.js'
+          unzip -p "$APK" assets/app35.js | grep -q 'Central de Diagnóstico'
+          unzip -p "$APK" assets/v1160.css | grep -q 'v1160-result'
           unzip -p "$APK" assets/harpa-lyrics-user.js | grep -qx 'window.HARPA_LYRICS_USER={};'
 
       - name: Guardar Diagnóstico
         shell: bash
         run: |
           mkdir -p /tmp/biblia-diag
-          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.15.10-Biblioteca-Esbocos.apk
+          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.16.0-Regressao.apk
 
       - name: Publicar técnico
         uses: actions/upload-artifact@v4
         with:
-          name: Biblia-EBD-Android-1.15.10-Biblioteca-Esbocos-Tecnica
+          name: Biblia-EBD-Android-1.16.0-Regressao-Tecnica
           path: /tmp/biblia-main/*
           retention-days: 14
 
       - name: Publicar Diagnóstico
         uses: actions/upload-artifact@v4
         with:
-          name: Biblia-EBD-Diagnostico-1.15.10-Biblioteca-Esbocos
-          path: /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.15.10-Biblioteca-Esbocos.apk
+          name: Biblia-EBD-Diagnostico-1.16.0-Regressao
+          path: /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.16.0-Regressao.apk
           retention-days: 14
