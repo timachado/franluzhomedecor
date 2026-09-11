@@ -82,7 +82,6 @@ public class MainActivity extends Activity {
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
         settings.setSupportZoom(false);
-        // Leve aumento global da tipografia sem ampliar os cards/ícones.
         settings.setTextZoom(108);
         settings.setUseWideViewPort(true);
         settings.setLoadWithOverviewMode(false);
@@ -137,7 +136,7 @@ public class MainActivity extends Activity {
         box.addView(title);
 
         TextView subtitle = new TextView(this);
-        subtitle.setText("Palavra • Harpa • Escola Bíblica");
+        subtitle.setText("Palavra • EBD • Harpa • Assistente IA");
         subtitle.setTextColor(Color.rgb(155, 164, 186));
         subtitle.setTextSize(11);
         subtitle.setGravity(Gravity.CENTER);
@@ -176,15 +175,10 @@ public class MainActivity extends Activity {
     private void handleBack() {
         if (webView == null) { finish(); return; }
 
-        // A SPA controla toda a navegação interna. Quando ela devolve false,
-        // significa especificamente "sair agora" (segundo Voltar na Home).
-        // Não consultar webView.canGoBack() aqui: hashes de rotas (#/bible, #/ebd...)
-        // ficam no histórico do WebView e fariam uma página antiga reaparecer antes de sair.
         webView.evaluateJavascript("!!(window.__ebdNativeBack112 && window.__ebdNativeBack112())", value -> {
             if ("true".equalsIgnoreCase(value)) return;
             if ("false".equalsIgnoreCase(value)) { finish(); return; }
 
-            // Fallback somente se o JavaScript ainda não estiver disponível.
             if (webView != null && webView.canGoBack()) webView.goBack();
             else finish();
         });
@@ -194,7 +188,7 @@ public class MainActivity extends Activity {
         try {
             return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
         } catch (Exception ignored) {
-            return "1.14.2";
+            return "1.15.0";
         }
     }
 
