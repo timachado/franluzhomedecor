@@ -1,23 +1,38 @@
-/* 1.17.0 — escala global da interface e alvos de toque confortáveis. */
+/* 1.17.1 — escala global com limites seguros para layout móvel. */
 .v1170-setting{margin:14px 0;padding:16px;border:1px solid rgba(167,139,250,.28);border-radius:20px;background:linear-gradient(145deg,rgba(79,70,229,.13),rgba(15,23,42,.76))}
 .v1170-setting-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.v1170-setting-head>div{display:flex;align-items:center;gap:11px}.v1170-setting-head span{font-size:25px}.v1170-setting-head strong{display:block;font-size:15px}.v1170-setting-head small{display:block;margin-top:3px;color:#9ca3af;line-height:1.45}.v1170-setting-head>b{color:#c4b5fd;font-size:16px}
 .v1170-scale-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:14px}.v1170-scale-row button{min-height:52px;border:1px solid rgba(148,163,184,.2);border-radius:14px;background:#11172d;color:#e5e7eb;font-weight:800;padding:9px 8px}.v1170-scale-row button small{display:block;margin-top:2px;color:#94a3b8;font-weight:700}.v1170-scale-row button.active{border-color:#8b5cf6;background:rgba(124,58,237,.2);box-shadow:0 0 0 1px rgba(139,92,246,.22)}.v1170-scale-row button.active small{color:#ddd6fe}.v1170-help{margin:11px 0 0;color:#94a3b8;font-size:11px;line-height:1.5}
 .v1170-shortcut{display:flex;align-items:center;gap:12px;margin:0 0 14px;padding:14px;border:1px solid rgba(167,139,250,.24);border-radius:18px;background:#0d1327}.v1170-shortcut>span{font-size:26px}.v1170-shortcut>div{flex:1;min-width:0}.v1170-shortcut strong,.v1170-shortcut small{display:block}.v1170-shortcut small{margin-top:3px;color:#94a3b8}.v1170-shortcut button{min-height:42px;padding:0 13px;border-radius:12px;font-weight:800}
 
-/* TextZoom do WebView aumenta a tipografia e emojis. Estas regras dão espaço físico aos controles. */
 body.v1170-scale-100 button,body.v1170-scale-112 button{min-height:42px}
-body.v1170-scale-125 button{min-height:46px}
-body.v1170-scale-140 button{min-height:50px}
-body.v1170-scale-125 input,body.v1170-scale-125 textarea,body.v1170-scale-125 select{min-height:46px}
-body.v1170-scale-140 input,body.v1170-scale-140 textarea,body.v1170-scale-140 select{min-height:50px}
-
+body.v1170-scale-120 button{min-height:45px}
+body.v1170-scale-125 button{min-height:47px}
+body.v1170-scale-120 input,body.v1170-scale-120 textarea,body.v1170-scale-120 select{min-height:45px}
+body.v1170-scale-125 input,body.v1170-scale-125 textarea,body.v1170-scale-125 select{min-height:47px}
 body.v1170-scale-112 .iconbtn{min-width:42px;min-height:42px}
+body.v1170-scale-120 .iconbtn{min-width:44px;min-height:44px}
 body.v1170-scale-125 .iconbtn{min-width:46px;min-height:46px}
-body.v1170-scale-140 .iconbtn{min-width:50px;min-height:50px}
-body.v1170-scale-125 .bottomnav button{padding-top:7px;padding-bottom:7px}
-body.v1170-scale-140 .bottomnav button{padding-top:9px;padding-bottom:9px}
-body.v1170-scale-125 .menu-item,body.v1170-scale-140 .menu-item{padding-top:14px;padding-bottom:14px}
-body.v1170-scale-125 .brandmark{min-width:44px;min-height:44px}
-body.v1170-scale-140 .brandmark{min-width:48px;min-height:48px}
+body.v1170-scale-120 .bottomnav button,body.v1170-scale-125 .bottomnav button{padding-top:7px;padding-bottom:7px}
+body.v1170-scale-120 .menu-item,body.v1170-scale-125 .menu-item{padding-top:13px;padding-bottom:13px}
+body.v1170-scale-120 .brandmark{min-width:43px;min-height:43px}
+body.v1170-scale-125 .brandmark{min-width:45px;min-height:45px}
 
-@media (max-width:380px){.v1170-scale-row{grid-template-columns:1fr 1fr}.v1170-setting{padding:13px}.v1170-shortcut{padding:12px}}
+/* Evita os estouros vistos no Backup em escala alta. */
+body.v1170-scale-120 #backupText1142+ .row,
+body.v1170-scale-125 #backupText1142+ .row{display:grid!important;grid-template-columns:1fr 1fr!important;gap:10px!important}
+body.v1170-scale-120 #analyzeBackup1142,
+body.v1170-scale-125 #analyzeBackup1142{grid-column:1/-1!important;width:100%!important;white-space:normal!important}
+body.v1170-scale-120 #copyBackup1142,
+body.v1170-scale-120 #shareBackup1142,
+body.v1170-scale-125 #copyBackup1142,
+body.v1170-scale-125 #shareBackup1142{width:100%!important;white-space:normal!important}
+
+/* Selects/inputs e cards de perfil permanecem acima da navegação e clicáveis. */
+body.v1170-scale-120 select,body.v1170-scale-125 select{font-size:inherit}
+body.v1170-scale-120 .form-card .row,body.v1170-scale-125 .form-card .row{flex-wrap:wrap}
+
+@media (max-width:380px){
+  .v1170-scale-row{grid-template-columns:1fr 1fr}.v1170-setting{padding:13px}.v1170-shortcut{padding:12px}
+  body.v1170-scale-120 #backupText1142+ .row,body.v1170-scale-125 #backupText1142+ .row{grid-template-columns:1fr!important}
+  body.v1170-scale-120 #analyzeBackup1142,body.v1170-scale-125 #analyzeBackup1142{grid-column:1!important}
+}
