@@ -65,8 +65,9 @@ Chegar a uma versão estável somente depois de completar as funcionalidades pla
 - [ ] Melhorar busca unificada e busca por linguagem natural.
 - [x] Ampliar recursos do Professor: perguntas, dinâmica, plano de aula e material de apoio com IA.
 - [x] Integrar Minha Turma, chamada e agenda à IA preservando dados pessoais.
-- [ ] Melhorar compartilhamento da turma e lembretes sem depender de cadastro online.
-- [ ] Avaliar áudio/leitura em voz alta sem comprometer o modo offline.
+- [x] Compartilhamento da turma e agenda pela folha nativa do Android, sem cadastro online.
+- [x] Lembretes locais da próxima EBD, com opção de 1 dia ou 1 hora antes.
+- [x] Leitura em voz alta usando o mecanismo de voz do Android para Bíblia, Harpa e respostas da IA.
 
 ## 1.16.x — Regressão completa dos recursos
 
@@ -81,6 +82,7 @@ Chegar a uma versão estável somente depois de completar as funcionalidades pla
 - [ ] Harpa Cristã completa: validar 640/640 no build que inclui as letras.
 - [ ] Dicionário, concordância, esboços, Atlas e Ministério & Estudo.
 - [ ] Assistente IA: contexto, respostas, salvamento, Professor/EBD, Turma/Chamada/Agenda e tratamento de falhas.
+- [ ] Leitura em voz alta, compartilhamento nativo e lembretes locais.
 - [ ] Modo Púlpito e manter tela ligada.
 - [ ] Aparência, foco, contraste e espaçamento.
 
