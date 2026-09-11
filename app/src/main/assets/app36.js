@@ -43,9 +43,10 @@
   }
   function refresh(fromPermission){
     if(typeof state==='undefined'||state.route!=='diagnostics1160')return;
+    const card=notificationCard();
     if(granted()){
       if(fromPermission)toastMsg('Notificações ativadas 🔔');
-      window.__EBD_DIAGNOSTICS_1160__?.run?.();
+      if(fromPermission||!card||card.classList.contains('warn'))window.__EBD_DIAGNOSTICS_1160__?.run?.();
       return;
     }
     requestAnimationFrame(decorate);
