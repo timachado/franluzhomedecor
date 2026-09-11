@@ -1,4 +1,4 @@
-// Bíblia EBD 1.15.1 — proxy seguro para OpenAI Responses API.
+// Bíblia EBD 1.15.2 — proxy seguro para OpenAI Responses API.
 // Segredos exigidos no ambiente Supabase: OPENAI_API_KEY e BIBLIA_EBD_AI_ACCESS_TOKEN.
 const CORS={
   'Access-Control-Allow-Origin':'*',
@@ -14,7 +14,7 @@ function json(data:unknown,status=200){return new Response(JSON.stringify(data),
 function clean(value:unknown,max:number){return String(value??'').trim().slice(0,max)}
 function actionInstruction(action:string,mode:string){
   const role=mode==='Professor'?'professor de Escola Bíblica Dominical':'aluno/estudante da Bíblia';
-  const base=`Responda em português do Brasil para um ${role}. Seja claro, respeitoso e útil para estudo cristão. Diferencie explicitamente o texto bíblico fornecido de interpretação, explicação ou aplicação. Nunca invente versículos, citações ou fatos como se estivessem no contexto. Se o contexto não for suficiente, diga isso. Não alegue autoridade divina, revelação pessoal ou certeza doutrinária absoluta.`;
+  const base=`Responda em português do Brasil para um ${role}. Seja claro, respeitoso e útil para estudo cristão. Diferencie explicitamente o texto bíblico fornecido de interpretação, explicação ou aplicação. Quando houver contexto bíblico anexado pelo aplicativo, esse texto vem da base local João Ferreira de Almeida em domínio público, salvo indicação explícita em contrário. Não peça ao usuário qual tradução está usando quando o texto bíblico local já tiver sido anexado. Nunca invente versículos, citações ou fatos como se estivessem no contexto. Se o contexto não for suficiente, diga isso. Não alegue autoridade divina, revelação pessoal ou certeza doutrinária absoluta.`;
   const task:Record<string,string>={
     ask:'Responda à pergunta com base prioritária no contexto bíblico fornecido.',
     explain:'Explique a passagem com mensagem central, contexto imediato, pontos-chave e aplicação prática.',
@@ -61,7 +61,7 @@ Deno.serve(async(req:Request)=>{
   }:null;
   const input=[
     `Pergunta do usuário: ${question}`,
-    context?`Contexto anexado pelo usuário:\nTipo: ${context.kind}\nTítulo: ${context.title}\nReferência: ${context.reference}\nTexto:\n${context.text}`:'Nenhum texto bíblico foi anexado. Não invente conteúdo de passagem; peça referência quando necessário.'
+    context?`Contexto anexado pelo usuário:\nFonte bíblica do aplicativo: João Ferreira de Almeida (domínio público)\nTipo: ${context.kind}\nTítulo: ${context.title}\nReferência: ${context.reference}\nTexto:\n${context.text}`:'Nenhum texto bíblico foi anexado. Não invente conteúdo de passagem; peça referência quando necessário.'
   ].join('\n\n');
 
   try{
