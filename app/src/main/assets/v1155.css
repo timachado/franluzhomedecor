@@ -1,0 +1,19 @@
+/* 1.15.5 — correção do tamanho de fonte da Bíblia.
+   reader19 define --reader-font no container. A regra antiga de v18.css usava
+   15px fixos no <p>, anulando visualmente A−/A+. O texto passa a herdar a
+   escala real do container, mantendo a tipografia serifada e a legibilidade. */
+.v19-verses{font-size:var(--reader-font,100%)!important}
+.v19-verses .v18-verse p,
+.v19-verses .v19-verse p{
+  font-size:1em!important;
+  line-height:1.72!important;
+}
+
+/* O painel de estudo acompanha a mesma preferência de leitura. */
+.v19-study-panel blockquote{
+  font-size:var(--reader-font,100%)!important;
+  line-height:1.72!important;
+}
+
+/* Deixa claro que os controles são de leitura e melhora o alvo de toque. */
+#fontDown19,#fontUp19{min-height:44px!important;font-size:15px!important;font-weight:900!important}
