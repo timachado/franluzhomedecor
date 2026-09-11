@@ -1,4 +1,4 @@
-// Bíblia EBD 1.15.2 — proxy seguro para OpenAI Responses API.
+// Bíblia EBD 1.15.4 — proxy seguro para OpenAI Responses API com continuidade local.
 // Segredos exigidos no ambiente Supabase: OPENAI_API_KEY e BIBLIA_EBD_AI_ACCESS_TOKEN.
 const CORS={
   'Access-Control-Allow-Origin':'*',
@@ -8,19 +8,21 @@ const CORS={
 };
 const MAX_QUESTION=4000;
 const MAX_CONTEXT=16000;
+const MAX_HISTORY_ITEMS=10;
+const MAX_HISTORY_TEXT=9000;
 const ACTIONS=new Set(['check','ask','explain','summary','context','outline','ebd']);
 
 function json(data:unknown,status=200){return new Response(JSON.stringify(data),{status,headers:CORS})}
 function clean(value:unknown,max:number){return String(value??'').trim().slice(0,max)}
 function actionInstruction(action:string,mode:string){
   const role=mode==='Professor'?'professor de Escola Bíblica Dominical':'aluno/estudante da Bíblia';
-  const base=`Responda em português do Brasil para um ${role}. Seja claro, respeitoso e útil para estudo cristão. Diferencie explicitamente o texto bíblico fornecido de interpretação, explicação ou aplicação. Quando houver contexto bíblico anexado pelo aplicativo, esse texto vem da base local João Ferreira de Almeida em domínio público, salvo indicação explícita em contrário. Não peça ao usuário qual tradução está usando quando o texto bíblico local já tiver sido anexado. Nunca invente versículos, citações ou fatos como se estivessem no contexto. Se o contexto não for suficiente, diga isso. Não alegue autoridade divina, revelação pessoal ou certeza doutrinária absoluta.`;
+  const base=`Responda em português do Brasil para um ${role}. Seja claro, respeitoso e útil para estudo cristão. Diferencie explicitamente o texto bíblico fornecido de interpretação, explicação ou aplicação. Quando houver contexto bíblico anexado pelo aplicativo, esse texto vem da base local João Ferreira de Almeida em domínio público, salvo indicação explícita em contrário. Não peça ao usuário qual tradução está usando quando o texto bíblico local já tiver sido anexado. Quando houver histórico da conversa, use-o apenas para manter continuidade e compreender perguntas de seguimento. O contexto bíblico anexado continua sendo a fonte principal para afirmações sobre a passagem. Nunca invente versículos, citações ou fatos como se estivessem no contexto. Se o contexto não for suficiente, diga isso. Não alegue autoridade divina, revelação pessoal ou certeza doutrinária absoluta.`;
   const task:Record<string,string>={
-    ask:'Responda à pergunta com base prioritária no contexto bíblico fornecido.',
+    ask:'Responda à pergunta com base prioritária no contexto bíblico fornecido e, quando útil, no histórico recente.',
     explain:'Explique a passagem com mensagem central, contexto imediato, pontos-chave e aplicação prática.',
     summary:'Produza um resumo fiel e conciso, seguido de pontos essenciais.',
     context:'Explique contexto histórico e literário apenas até onde houver base; sinalize claramente inferências.',
-    outline:'Crie um esboço de estudo/pregação com título, texto-base, introdução, três pontos, aplicação e conclusão.',
+    outline:'Crie um esboço de estudo/pregação com título, texto-base, introdução, três pontos, aplicação e conclusão. Se houver histórico, incorpore os pontos úteis já discutidos.',
     ebd:'Crie um roteiro de aula EBD com objetivos, introdução, desenvolvimento, perguntas, dinâmica simples e aplicação.'
   };
   return `${base}\n\nTarefa: ${task[action]||task.ask}`;
@@ -34,13 +36,25 @@ function extractText(data:any){
   }
   return parts.join('\n').trim();
 }
+function cleanHistory(value:any){
+  if(!Array.isArray(value))return [];
+  const out:any[]=[];let total=0;
+  for(const row of value.slice(-MAX_HISTORY_ITEMS)){
+    const role=row?.role==='assistant'?'assistant':row?.role==='user'?'user':'';
+    if(!role)continue;
+    const text=clean(row?.text,2500);if(!text)continue;
+    if(total+text.length>MAX_HISTORY_TEXT)break;
+    out.push({role,text});total+=text.length;
+  }
+  return out;
+}
 
 Deno.serve(async(req:Request)=>{
   if(req.method==='OPTIONS')return new Response(null,{status:204,headers:CORS});
   const apiKey=Deno.env.get('OPENAI_API_KEY')||'';
   const accessExpected=Deno.env.get('BIBLIA_EBD_AI_ACCESS_TOKEN')||'';
   const model=Deno.env.get('OPENAI_MODEL')||'gpt-5.6-luna';
-  if(req.method==='GET')return json({online:true,configured:!!apiKey&&!!accessExpected,model:apiKey?model:null});
+  if(req.method==='GET')return json({online:true,configured:!!apiKey&&!!accessExpected,model:apiKey?model:null,continuity:true});
   if(req.method!=='POST')return json({message:'Método não permitido.'},405);
   if(!apiKey||!accessExpected)return json({message:'Assistente IA ainda não foi configurado no servidor.'},503);
   const access=req.headers.get('x-biblia-access')||'';
@@ -50,7 +64,7 @@ Deno.serve(async(req:Request)=>{
   try{body=await req.json()}catch(_){return json({message:'Requisição inválida.'},400)}
   const action=clean(body?.action,24);
   if(!ACTIONS.has(action))return json({message:'Ação inválida.'},400);
-  if(action==='check')return json({ok:true,configured:true,model});
+  if(action==='check')return json({ok:true,configured:true,model,continuity:true});
 
   const question=clean(body?.question,MAX_QUESTION);
   const mode=clean(body?.mode,24)==='Professor'?'Professor':'Aluno';
@@ -59,10 +73,13 @@ Deno.serve(async(req:Request)=>{
   const context=c?{
     kind:clean(c.kind,64),title:clean(c.title,240),reference:clean(c.reference,160),text:clean(c.text,MAX_CONTEXT)
   }:null;
+  const history=cleanHistory(body?.history);
+  const historyText=history.length?history.map((m:any)=>`${m.role==='user'?'Usuário':'Assistente'}: ${m.text}`).join('\n\n'):'';
   const input=[
-    `Pergunta do usuário: ${question}`,
-    context?`Contexto anexado pelo usuário:\nFonte bíblica do aplicativo: João Ferreira de Almeida (domínio público)\nTipo: ${context.kind}\nTítulo: ${context.title}\nReferência: ${context.reference}\nTexto:\n${context.text}`:'Nenhum texto bíblico foi anexado. Não invente conteúdo de passagem; peça referência quando necessário.'
-  ].join('\n\n');
+    historyText?`Histórico recente desta mesma sessão:\n${historyText}`:'',
+    `Pergunta atual do usuário: ${question}`,
+    context?`Contexto anexado pelo usuário:\nFonte bíblica do aplicativo: João Ferreira de Almeida (domínio público)\nTipo: ${context.kind}\nTítulo: ${context.title}\nReferência: ${context.reference}\nTexto:\n${context.text}`:'Nenhum texto bíblico foi anexado. Se a pergunta depender de uma passagem específica e o histórico também não trouxer o texto necessário, peça a referência.'
+  ].filter(Boolean).join('\n\n');
 
   try{
     const upstream=await fetch('https://api.openai.com/v1/responses',{
@@ -71,7 +88,7 @@ Deno.serve(async(req:Request)=>{
         model,
         store:false,
         reasoning:{effort:'low'},
-        max_output_tokens:1400,
+        max_output_tokens:1600,
         instructions:actionInstruction(action,mode),
         input
       })
@@ -84,7 +101,7 @@ Deno.serve(async(req:Request)=>{
     }
     const answer=extractText(data);
     if(!answer)return json({message:'A IA respondeu sem texto utilizável.'},502);
-    return json({answer,model:data?.model||model,responseId:data?.id||null});
+    return json({answer,model:data?.model||model,responseId:data?.id||null,historyUsed:history.length});
   }catch(err){
     console.error('biblia-ai error',String(err));
     return json({message:'Falha temporária ao conectar com o provedor de IA.'},502);
