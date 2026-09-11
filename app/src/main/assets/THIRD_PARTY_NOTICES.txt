@@ -3,15 +3,20 @@ BÍBLIA EBD — AVISOS DE CONTEÚDO DE TERCEIROS
 Bíblia em português
 -------------------
 Tradução: João Ferreira de Almeida (edição histórica livre de revisões modernas protegidas).
-Corpus utilizado no build: sangchy1972/pd-text-corpus, derivado de seven1m/open-bibles (por-almeida.usfx.xml).
+Corpus utilizado no build público: sangchy1972/pd-text-corpus, derivado de seven1m/open-bibles (por-almeida.usfx.xml).
 A fonte do corpus identifica esta tradução como Public Domain.
 O layout, scripts e metadados do pd-text-corpus são disponibilizados sob licença MIT; os textos bíblicos mantêm suas licenças próprias.
-Snapshot usado no build 1.8.0: e9df0306d76c8b1bf66aae71fc6e93ed8622c8cc.
+Snapshot fixado usado pela pipeline pública: e9df0306d76c8b1bf66aae71fc6e93ed8622c8cc.
 
-Harpa Cristã — catálogo
------------------------
-A Bíblia EBD 1.8.0 utiliza somente número e título para indexar os 640 hinos. Letras, coros e estrofes não são redistribuídos nesta compilação.
+Harpa Cristã — catálogo público
+--------------------------------
+A edição pública da Bíblia EBD utiliza somente número e título para indexar os 640 hinos.
+Letras, coros e estrofes da edição privada não são redistribuídos no APK/AAB público.
 A fonte técnica usada para montar o índice de números/títulos é o projeto open source manda-vai/harpa-crista-digital (MIT), snapshot 752321d683b1450430ea5d8137819b1ba3901a92, que credita o conjunto de dados original a Daniel Liberato da Silva.
-A inclusão futura de letras completas dependerá de autorização/licenciamento apropriado para redistribuição no produto.
+Qualquer inclusão futura de letras completas dependerá de autorização/licenciamento apropriado para redistribuição.
 
-Bíblia EBD, marca, interface, revistas demonstrativas e código específico do aplicativo são conteúdo próprio deste projeto.
+Conteúdo próprio
+----------------
+Bíblia EBD, marca, interface, funcionalidades específicas, materiais autorais da área EBD e código próprio do aplicativo pertencem aos respectivos autores/titulares do projeto.
+
+Última revisão deste aviso para a linha pública: versão 1.14.1 Public Beta.
