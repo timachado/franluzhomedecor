@@ -194,7 +194,7 @@ public class MainActivity extends Activity {
         try {
             return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
         } catch (Exception ignored) {
-            return "1.13.12";
+            return "1.14.1";
         }
     }
 
