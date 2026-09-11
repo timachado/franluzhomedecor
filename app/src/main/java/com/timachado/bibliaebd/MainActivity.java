@@ -162,7 +162,7 @@ public class MainActivity extends Activity {
 
     private String installedVersionName() {
         try { return getPackageManager().getPackageInfo(getPackageName(), 0).versionName; }
-        catch (Exception ignored) { return "1.16.0"; }
+        catch (Exception ignored) { return "1.16.1"; }
     }
 
     private PendingIntent reminderPendingIntent(int requestCode, String title, String text) {
@@ -171,6 +171,14 @@ public class MainActivity extends Activity {
         intent.putExtra("text", text);
         intent.putExtra("notificationId", requestCode);
         return PendingIntent.getBroadcast(this, requestCode, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+    }
+
+    private void notifyWebPermissionResult(boolean granted) {
+        if (webView == null) return;
+        final String js = "window.__EBD_NOTIFICATIONS_1161__&&window.__EBD_NOTIFICATIONS_1161__.permissionResult(" + (granted ? "true" : "false") + ")";
+        webView.post(() -> {
+            if (webView != null) webView.evaluateJavascript(js, null);
+        });
     }
 
     private class NativeBridge {
@@ -205,7 +213,11 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface public void stopSpeech() { runOnUiThread(() -> { if (tts != null) tts.stop(); }); }
         @JavascriptInterface public boolean notificationPermissionGranted() { return Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU || checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED; }
-        @JavascriptInterface public void requestNotificationPermission() { if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) runOnUiThread(() -> requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, NOTIFICATION_PERMISSION_REQUEST)); }
+        @JavascriptInterface public void requestNotificationPermission() {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                runOnUiThread(() -> requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, NOTIFICATION_PERMISSION_REQUEST));
+            } else notifyWebPermissionResult(true);
+        }
 
         @JavascriptInterface public boolean scheduleReminder(long triggerAtMillis, String title, String text, int requestCode) {
             if (triggerAtMillis <= System.currentTimeMillis()) return false;
@@ -222,10 +234,28 @@ public class MainActivity extends Activity {
         }
     }
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == NOTIFICATION_PERMISSION_REQUEST) {
+            boolean granted = grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED;
+            notifyWebPermissionResult(granted);
+        }
+    }
+
     @Override protected void onSaveInstanceState(Bundle outState) { if (webView != null) webView.saveState(outState); super.onSaveInstanceState(outState); }
     @Override @SuppressWarnings("deprecation") public void onBackPressed() { handleBack(); }
     @Override protected void onPause() { super.onPause(); }
-    @Override protected void onResume() { super.onResume(); if (root != null) root.requestApplyInsets(); if (webView != null) webView.requestFocus(); }
+    @Override protected void onResume() {
+        super.onResume();
+        if (root != null) root.requestApplyInsets();
+        if (webView != null) {
+            webView.requestFocus();
+            webView.post(() -> {
+                if (webView != null) webView.evaluateJavascript("window.__EBD_NOTIFICATIONS_1161__&&window.__EBD_NOTIFICATIONS_1161__.refresh()", null);
+            });
+        }
+    }
     @Override protected void onDestroy() {
         if (tts != null) { tts.stop(); tts.shutdown(); tts = null; ttsReady = false; }
         if (webView != null) { webView.removeJavascriptInterface("AndroidBridge"); webView.stopLoading(); webView.loadUrl("about:blank"); webView.destroy(); webView = null; }
