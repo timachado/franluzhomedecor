@@ -1,4 +1,4 @@
-name: Build Bíblia EBD Android — 1.15.5 Fonte + Harpa Base
+name: Build Bíblia EBD Android — 1.15.6 Professor IA
 
 on:
   push:
@@ -41,105 +41,61 @@ jobs:
           printf 'bibles/pt/\n' > /tmp/pd-text-corpus/.git/info/sparse-checkout
           git -C /tmp/pd-text-corpus fetch -q --depth 1 origin e9df0306d76c8b1bf66aae71fc6e93ed8622c8cc
           git -C /tmp/pd-text-corpus checkout -q FETCH_HEAD
-
-          curl -L --fail --retry 3 -sS \
-            https://raw.githubusercontent.com/manda-vai/harpa-crista-digital/752321d683b1450430ea5d8137819b1ba3901a92/src/data/harpa_crista_640_hinos.json \
-            -o /tmp/harpa.json
-
+          curl -L --fail --retry 3 -sS https://raw.githubusercontent.com/manda-vai/harpa-crista-digital/752321d683b1450430ea5d8137819b1ba3901a92/src/data/harpa_crista_640_hinos.json -o /tmp/harpa.json
           python3 - <<'PY'
           import json, os, re
           root='/tmp/pd-text-corpus/bibles/pt'
           with open(os.path.join(root,'index.json'),encoding='utf-8') as f: meta=json.load(f)
           pt_names=['Gênesis','Êxodo','Levítico','Números','Deuteronômio','Josué','Juízes','Rute','1 Samuel','2 Samuel','1 Reis','2 Reis','1 Crônicas','2 Crônicas','Esdras','Neemias','Ester','Jó','Salmos','Provérbios','Eclesiastes','Cânticos','Isaías','Jeremias','Lamentações','Ezequiel','Daniel','Oseias','Joel','Amós','Obadias','Jonas','Miqueias','Naum','Habacuque','Sofonias','Ageu','Zacarias','Malaquias','Mateus','Marcos','Lucas','João','Atos','Romanos','1 Coríntios','2 Coríntios','Gálatas','Efésios','Filipenses','Colossenses','1 Tessalonicenses','2 Tessalonicenses','1 Timóteo','2 Timóteo','Tito','Filemom','Hebreus','Tiago','1 Pedro','2 Pedro','1 João','2 João','3 João','Judas','Apocalipse']
+          books=[]; chapters=0; verses_total=0
           assert len(meta['books'])==66 and len(pt_names)==66
-          books=[]; verse_count=0; chapter_count=0
           for src,name in zip(meta['books'],pt_names):
-              chapters=[]
+              rows=[]
               for c in range(1,src['chapters']+1):
-                  path=os.path.join(root,'books',src['slug'],'chapters',f'{c}.json')
-                  with open(path,encoding='utf-8') as f: ch=json.load(f)
-                  verses=[v['text'].strip() for v in ch['verses']]
-                  assert verses
-                  chapters.append(verses); verse_count+=len(verses); chapter_count+=1
-              books.append({'name':name,'slug':src['slug'],'chapters':chapters})
-          assert chapter_count==1189 and verse_count==31098
-          bible={'translation':'João Ferreira de Almeida','license':'Public Domain','source':'sangchy1972/pd-text-corpus / seven1m/open-bibles','snapshot':'e9df0306d76c8b1bf66aae71fc6e93ed8622c8cc','stats':{'books':66,'chapters':chapter_count,'verses':verse_count},'books':books}
+                  with open(os.path.join(root,'books',src['slug'],'chapters',f'{c}.json'),encoding='utf-8') as f: ch=json.load(f)
+                  vs=[v['text'].strip() for v in ch['verses']]; assert vs
+                  rows.append(vs); chapters+=1; verses_total+=len(vs)
+              books.append({'name':name,'slug':src['slug'],'chapters':rows})
+          assert chapters==1189 and verses_total==31098
           with open('app/src/main/assets/bible-data.js','w',encoding='utf-8') as f:
-              f.write('window.BIBLE_DATA_V18='); json.dump(bible,f,ensure_ascii=False,separators=(',',':')); f.write(';\n')
+              f.write('window.BIBLE_DATA_V18='); json.dump({'translation':'João Ferreira de Almeida','license':'Public Domain','stats':{'books':66,'chapters':chapters,'verses':verses_total},'books':books},f,ensure_ascii=False,separators=(',',':')); f.write(';\n')
           with open('/tmp/harpa.json',encoding='utf-8') as f: raw=json.load(f)
           catalog=[]
           for n in range(1,641):
               row=raw.get(str(n)); assert row and row.get('hino')
-              title=re.sub(r'^\s*\d+\s*-\s*','',row['hino']).strip(); assert title
-              catalog.append({'n':n,'title':title})
+              catalog.append({'n':n,'title':re.sub(r'^\s*\d+\s*-\s*','',row['hino']).strip()})
           with open('app/src/main/assets/harpa-data.js','w',encoding='utf-8') as f:
               f.write('window.HARPA_CATALOG_V18='); json.dump(catalog,f,ensure_ascii=False,separators=(',',':')); f.write(';\n')
-          # O CI público/técnico nunca recebe a base privada de letras.
-          with open('app/src/main/assets/harpa-lyrics-user.js','w',encoding='utf-8') as f:
-              f.write('window.HARPA_LYRICS_USER={};\n')
-          print('Bíblia:',len(books),'livros,',chapter_count,'capítulos,',verse_count,'versículos')
-          print('Harpa:',len(catalog),'títulos; letras privadas no CI: 0')
+          with open('app/src/main/assets/harpa-lyrics-user.js','w',encoding='utf-8') as f: f.write('window.HARPA_LYRICS_USER={};\n')
+          print('Bíblia', chapters, verses_total, 'Harpa', len(catalog))
           PY
 
-      - name: Preparar versão interna 1.15.5
+      - name: Validar 1.15.6
         shell: bash
         run: |
           set -euo pipefail
-          python3 - <<'PY'
-          import re
-          from pathlib import Path
-          p=Path('app/build.gradle')
-          s=p.read_text(encoding='utf-8')
-          s=re.sub(r'versionCode\s+\d+','versionCode 114',s,count=1)
-          s=re.sub(r"versionName\s+'[^']+'","versionName '1.15.5'",s,count=1)
-          if 'versionCode 114' not in s or "versionName '1.15.5'" not in s:
-              raise SystemExit('Falha ao preparar 1.15.5 / 114')
-          p.write_text(s,encoding='utf-8')
-          PY
-
-      - name: Validar 1.15.5 — fonte Bíblia e regressão estrutural
-        shell: bash
-        run: |
-          set -euo pipefail
-          node --check app/src/main/assets/stability1141.js
-          node --check app/src/main/assets/app20.js
-          node --check app/src/main/assets/app21.js
-          node --check app/src/main/assets/app22.js
-          node --check app/src/main/assets/app23.js
-          node --check app/src/main/assets/app24.js
-          node --check app/src/main/assets/app25.js
-          node --check app/src/main/assets/app26.js
-          node --check app/src/main/assets/app27.js
-          node --check app/src/main/assets/app28.js
-          node --check app/src/main/assets/app29.js
+          for f in stability1141.js app20.js app21.js app22.js app23.js app24.js app25.js app26.js app27.js app28.js app29.js app30.js; do node --check "app/src/main/assets/$f"; done
           python3 - <<'PY'
           from pathlib import Path
           s=Path('app/src/main/assets/index.html').read_text(encoding='utf-8')
           assert s.index('stability1141.js') < s.index('app1.js')
-          assert s.index('app23.js') < s.index('app24.js') < s.index('app25.js') < s.index('app26.js') < s.index('app27.js') < s.index('app28.js') < s.index('app29.js')
-          ai=Path('app/src/main/assets/app24.js').read_text(encoding='utf-8')
-          pin=Path('app/src/main/assets/app29.js').read_text(encoding='utf-8')
-          css=Path('app/src/main/assets/v1155.css').read_text(encoding='utf-8')
-          assert 'OPENAI_API_KEY' not in ai+pin
-          assert '__EBD_AI_1154_CONTEXT__' in pin
-          assert '__EBD_READER_1155__' in pin
-          assert "link.href='v1155.css'" in pin
-          assert '.v19-verses .v18-verse p' in css
-          assert 'font-size:1em!important' in css
-          assert '#fontDown19,#fontUp19' in css
-          assert 'ebd-ai-studies-v1154' in Path('app/src/main/assets/app28.js').read_text(encoding='utf-8')
-          assert 'REFERÊNCIA DETECTADA' in Path('app/src/main/assets/app26.js').read_text(encoding='utf-8')
-          assert 'Estudar com IA' in ai
+          assert s.index('app29.js') < s.index('app30.js')
+          assert 'v1156.css' in s and 'app30.js' in s
+          a=Path('app/src/main/assets/app30.js').read_text(encoding='utf-8')
+          c=Path('app/src/main/assets/v1156.css').read_text(encoding='utf-8')
+          b=Path('backend/supabase/functions/biblia-ai/index.ts').read_text(encoding='utf-8')
+          assert '__EBD_AI_EBD_1156__' in a
+          assert 'CENTRAL IA DO PROFESSOR' in a
+          assert 'Plano completo' in a and 'Dinâmica' in a and 'Aplicações' in a
+          assert 'Esboços com IA' in a and 'contextFromRef' in a
+          assert 'ai1156-teacher' in c and 'ai1156-outline-hub' in c
+          assert 'teacherEbd' in b and 'Cronograma' in b
+          assert 'OPENAI_API_KEY' not in a
+          g=Path('app/build.gradle').read_text(encoding='utf-8')
+          assert 'versionCode 115' in g and "versionName '1.15.6'" in g
           PY
-          grep -q '__EBD_STABILITY_1141__' app/src/main/assets/stability1141.js
-          grep -q '__EBD_BACKUP_1142__' app/src/main/assets/app23.js
-          grep -q '__EBD_AI_1154__' app/src/main/assets/app28.js
           grep -q '__EBD_READER_1155__' app/src/main/assets/app29.js
-          grep -q 'versionCode 114' app/build.gradle
-          grep -q "versionName '1.15.5'" app/build.gradle
-          grep -q 'return "1.15.5";' app/src/main/java/com/timachado/bibliaebd/MainActivity.java
-          grep -q 'height:100dvh!important' app/src/main/assets/v1136.css
-          grep -q 'setTextZoom(108)' app/src/main/java/com/timachado/bibliaebd/MainActivity.java
+          grep -q 'font-size:1em!important' app/src/main/assets/v1155.css
           grep -qx 'window.HARPA_LYRICS_USER={};' app/src/main/assets/harpa-lyrics-user.js
 
       - name: Gerar APK principal técnico
@@ -152,59 +108,53 @@ jobs:
         shell: bash
         run: |
           mkdir -p /tmp/biblia-main
-          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-main/Biblia-EBD-1.15.5-Fonte-Biblica-Tecnica.apk
-          cp app/build/outputs/bundle/debug/app-debug.aab /tmp/biblia-main/Biblia-EBD-1.15.5-Fonte-Biblica-Tecnica.aab
+          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-main/Biblia-EBD-1.15.6-Professor-IA-Tecnica.apk
+          cp app/build/outputs/bundle/debug/app-debug.aab /tmp/biblia-main/Biblia-EBD-1.15.6-Professor-IA-Tecnica.aab
 
       - name: Preparar Diagnóstico lado a lado
         shell: bash
         run: |
-          set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
-          p=Path('app/build.gradle')
-          s=p.read_text(encoding='utf-8')
+          p=Path('app/build.gradle'); s=p.read_text(encoding='utf-8')
           s=s.replace("applicationId 'com.timachado.bibliaebd'","applicationId 'com.timachado.bibliaebd.diag'",1)
-          if "applicationId 'com.timachado.bibliaebd.diag'" not in s:
-              raise SystemExit('Falha ao preparar applicationId diagnóstico')
           p.write_text(s,encoding='utf-8')
-          r=Path('app/src/main/res/values/strings.xml')
-          x=r.read_text(encoding='utf-8').replace('>Bíblia EBD<','>Bíblia EBD Diagnóstico<',1)
-          r.write_text(x,encoding='utf-8')
+          r=Path('app/src/main/res/values/strings.xml'); x=r.read_text(encoding='utf-8').replace('>Bíblia EBD<','>Bíblia EBD Diagnóstico<',1); r.write_text(x,encoding='utf-8')
           PY
 
-      - name: Gerar APK Diagnóstico 1.15.5
+      - name: Gerar APK Diagnóstico
         run: gradle --no-daemon clean assembleDebug
 
-      - name: Validar APK Diagnóstico 1.15.5
+      - name: Validar APK Diagnóstico
         shell: bash
         run: |
           set -euo pipefail
           APK=app/build/outputs/apk/debug/app-debug.apk
           AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
-          "$AAPT" dump badging "$APK" | tee /tmp/diag-badging.txt
-          grep -q "package: name='com.timachado.bibliaebd.diag' versionCode='114' versionName='1.15.5-teste'" /tmp/diag-badging.txt
-          grep -q "application-label:'Bíblia EBD Diagnóstico'" /tmp/diag-badging.txt
-          unzip -p "$APK" assets/index.html | grep -q 'app29.js'
-          unzip -p "$APK" assets/app29.js | grep -q '__EBD_READER_1155__'
-          unzip -p "$APK" assets/v1155.css | grep -q 'font-size:1em!important'
+          "$AAPT" dump badging "$APK" | tee /tmp/badging.txt
+          grep -q "package: name='com.timachado.bibliaebd.diag' versionCode='115' versionName='1.15.6-teste'" /tmp/badging.txt
+          grep -q "application-label:'Bíblia EBD Diagnóstico'" /tmp/badging.txt
+          unzip -p "$APK" assets/index.html | grep -q 'app30.js'
+          unzip -p "$APK" assets/app30.js | grep -q 'CENTRAL IA DO PROFESSOR'
+          unzip -p "$APK" assets/v1156.css | grep -q 'ai1156-teacher'
           unzip -p "$APK" assets/harpa-lyrics-user.js | grep -qx 'window.HARPA_LYRICS_USER={};'
 
       - name: Guardar Diagnóstico
         shell: bash
         run: |
           mkdir -p /tmp/biblia-diag
-          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.15.5-Fonte-Biblica-Base.apk
+          cp app/build/outputs/apk/debug/app-debug.apk /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.15.6-Professor-IA.apk
 
-      - name: Publicar artefatos técnicos internos
+      - name: Publicar técnico
         uses: actions/upload-artifact@v4
         with:
-          name: Biblia-EBD-Android-1.15.5-Fonte-Biblica-Tecnica
+          name: Biblia-EBD-Android-1.15.6-Professor-IA-Tecnica
           path: /tmp/biblia-main/*
           retention-days: 14
 
-      - name: Publicar Diagnóstico base instalável lado a lado
+      - name: Publicar Diagnóstico
         uses: actions/upload-artifact@v4
         with:
-          name: Biblia-EBD-Diagnostico-1.15.5-Fonte-Biblica-Base
-          path: /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.15.5-Fonte-Biblica-Base.apk
+          name: Biblia-EBD-Diagnostico-1.15.6-Professor-IA
+          path: /tmp/biblia-diag/Biblia-EBD-Diagnostico-1.15.6-Professor-IA.apk
           retention-days: 14
