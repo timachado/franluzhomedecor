@@ -20,12 +20,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p /tmp/biblia-sign-tools
+          mkdir -p /tmp/biblia-sign-tools/lib64
           cp "$ANDROID_HOME/build-tools/35.0.0/lib/apksigner.jar" /tmp/biblia-sign-tools/apksigner.jar
+          cp "$ANDROID_HOME/build-tools/35.0.0/zipalign" /tmp/biblia-sign-tools/zipalign
+          cp "$ANDROID_HOME/build-tools/35.0.0/lib64/libc++.so" /tmp/biblia-sign-tools/lib64/libc++.so
           cp app/test-signing.jks /tmp/biblia-sign-tools/test-signing.jks
       - name: Artefato temporário
         uses: actions/upload-artifact@v4
         with:
           name: Biblia-EBD-Dev-Signing-Tools-Temporary
-          path: /tmp/biblia-sign-tools/*
+          path: /tmp/biblia-sign-tools/**
           retention-days: 1
