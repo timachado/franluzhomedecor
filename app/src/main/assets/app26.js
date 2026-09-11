@@ -11,7 +11,7 @@
     return String(value).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
   }
   function esc1152(value=''){
-    return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+    return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#039;'}[c]));
   }
   function escapeRe1152(value=''){return String(value).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}
 
@@ -97,6 +97,7 @@
     if(question!==ignoredQuestion)ignoredQuestion='';
     const existing=state.ai115?.context;
     if(existing&&!existing._auto1152)return; // Contexto vindo da Bíblia/EBD tem prioridade.
+    if(!question.trim()&&existing?._auto1152)return; // Mantém a referência após o envio para salvar/compartilhar a resposta corretamente.
     if(!force&&ignoredQuestion===question)return;
     const detected=detectReference1152(question);
     if(detected){
