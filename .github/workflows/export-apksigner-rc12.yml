@@ -1,0 +1,29 @@
+name: Export Android apksigner RC12
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  export-apksigner:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: android-actions/setup-android@v3
+      - name: Install build tools
+        run: yes | sdkmanager "build-tools;36.0.0" || true
+      - name: Package apksigner
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p tmp-apksigner/lib
+          cp "$ANDROID_HOME/build-tools/36.0.0/apksigner" tmp-apksigner/
+          cp "$ANDROID_HOME/build-tools/36.0.0/lib/apksigner.jar" tmp-apksigner/lib/
+          chmod +x tmp-apksigner/apksigner
+          ls -lh tmp-apksigner tmp-apksigner/lib
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Android-apksigner-36
+          path: tmp-apksigner
+          retention-days: 2
