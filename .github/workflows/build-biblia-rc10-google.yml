@@ -33,7 +33,7 @@ jobs:
             --lib "$ANDROID_HOME/platforms/android-36/android.jar" \
             --output "$ROOT/dex" \
             "$ROOT/classes/com/timachado/bibliaebd/AuthActivity.class" \
-            "$ROOT/classes/com/timachado/bibliaebd/AuthActivity$AuthBridge.class"
+            "$ROOT/classes/com/timachado/bibliaebd/AuthActivity\$AuthBridge.class"
           cp "$ROOT/dex/classes.dex" "$ROOT/Biblia-EBD-RC10-classes4.dex"
           ls -lh "$ROOT/Biblia-EBD-RC10-classes4.dex"
       - uses: actions/upload-artifact@v4
