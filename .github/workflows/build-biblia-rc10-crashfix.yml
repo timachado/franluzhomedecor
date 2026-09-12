@@ -32,9 +32,7 @@ jobs:
             --min-api 24 \
             --lib "$ANDROID_HOME/platforms/android-36/android.jar" \
             --output "$ROOT/dex" \
-            "$ROOT/classes/com/timachado/bibliaebd/AuthActivity.class" \
-            "$ROOT/classes/com/timachado/bibliaebd/AuthActivity$GoogleBridge.class" \
-            "$ROOT/classes/com/timachado/bibliaebd/AuthActivity$1.class"
+            "$ROOT/classes/com/timachado/bibliaebd/AuthActivity"*.class
           cp "$ROOT/dex/classes.dex" "$ROOT/Biblia-EBD-RC10-Crashfix-classes4.dex"
           ls -lh "$ROOT/Biblia-EBD-RC10-Crashfix-classes4.dex"
       - uses: actions/upload-artifact@v4
