@@ -1,119 +1,46 @@
-name: Build FranLuz Release APK
+name: Build BORDATTO APK
+
 on:
   push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+    branches: [build-apk-282]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
-
-      - name: Rebuild and verify official FranLuz icon
-        run: |
-          echo '=== REBUILD APPROVED ICON ==='
-          echo 'cc3b318fe8274cdc2c1c219a2030d3d7320bf06089c84eec94aecc9e1ebc6a6b  app/icon_parts/part2_q1_fix.b64' | sha256sum -c -
-          cat app/icon_parts/part2_q1_fix.b64 > /tmp/part2_fixed.b64
-          tail -c +876 app/icon_parts/part2.b64 >> /tmp/part2_fixed.b64
-          echo '3e84977d0021e281d60a6adc8e39bbc806ce1c9cc5fa61dde9c5a52179b6e0e8  /tmp/part2_fixed.b64' | sha256sum -c -
-          mkdir -p app/src/main/res/drawable-nodpi
-          cat app/icon_parts/part1.b64 /tmp/part2_fixed.b64 app/icon_parts/part3.b64 app/icon_parts/part4.b64 | tr -d '\r\n' | base64 -d > app/src/main/res/drawable-nodpi/franluz_app_icon.png
-          echo 'c475e22792192438093b2b303b996d909ec14891fa2a8210471d780ef6b0f28e  app/src/main/res/drawable-nodpi/franluz_app_icon.png' | sha256sum -c -
-
-      - name: Probe FranLuz HTTPS
-        run: |
-          curl -I -L --max-time 30 -A 'Mozilla/5.0 Android' 'https://franluzhomedecor.infinityfree.io/?pwa=1&app=android' || true
 
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
       - uses: android-actions/setup-android@v3
 
-      - name: Install Android SDK 36
+      - name: Install Android SDK
         run: yes | sdkmanager "platforms;android-36" "build-tools;36.0.0" || true
 
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.13'
 
-      - name: Build unsigned Release APK
-        run: gradle --no-daemon clean assembleRelease
+      - name: Build BORDATTO debug APK
+        run: gradle --no-daemon clean assembleDebug --stacktrace
 
-      - name: Generate permanent FranLuz signing certificate
-        shell: bash
+      - name: Verify APK
         run: |
-          set -euo pipefail
-          mkdir -p /tmp/franluz-signing
-          PASS=$(openssl rand -hex 24)
-          echo "::add-mask::$PASS"
-          printf '%s' "$PASS" > /tmp/franluz-signing/keystore-password.txt
-          keytool -genkeypair -v \
-            -keystore /tmp/franluz-signing/franluz-release.jks \
-            -storepass "$PASS" \
-            -keypass "$PASS" \
-            -alias franluz \
-            -keyalg RSA \
-            -keysize 4096 \
-            -validity 10000 \
-            -dname "CN=FranLuz Home Decor, OU=T.I. Machado - Solucoes em Tecnologia, O=FranLuz Home Decor, C=BR"
-          keytool -exportcert -rfc \
-            -keystore /tmp/franluz-signing/franluz-release.jks \
-            -storepass "$PASS" \
-            -alias franluz \
-            -file /tmp/franluz-signing/franluz-release-cert.pem
-          keytool -list -v \
-            -keystore /tmp/franluz-signing/franluz-release.jks \
-            -storepass "$PASS" \
-            -alias franluz > /tmp/franluz-signing/certificate-info.txt
-          echo "alias=franluz" > /tmp/franluz-signing/README-SIGNING.txt
-          echo "Guarde este pacote em local seguro. Ele e necessario para assinar futuras atualizacoes do APK FranLuz." >> /tmp/franluz-signing/README-SIGNING.txt
-
-      - name: Zipalign and sign Release APK
-        shell: bash
-        run: |
-          set -euo pipefail
-          PASS=$(cat /tmp/franluz-signing/keystore-password.txt)
-          UNSIGNED='app/build/outputs/apk/release/app-release-unsigned.apk'
-          test -f "$UNSIGNED"
-          $ANDROID_HOME/build-tools/36.0.0/zipalign -f -p 4 "$UNSIGNED" /tmp/FranLuz_Home_Decor_2.8.10_Release_aligned.apk
-          $ANDROID_HOME/build-tools/36.0.0/apksigner sign \
-            --ks /tmp/franluz-signing/franluz-release.jks \
-            --ks-key-alias franluz \
-            --ks-pass pass:"$PASS" \
-            --key-pass pass:"$PASS" \
-            --out FranLuz_Home_Decor_2.8.10_Release.apk \
-            /tmp/FranLuz_Home_Decor_2.8.10_Release_aligned.apk
-
-      - name: Verify production APK
-        run: |
-          set -euo pipefail
-          $ANDROID_HOME/build-tools/36.0.0/apksigner verify --verbose --print-certs FranLuz_Home_Decor_2.8.10_Release.apk | tee /tmp/franluz-signing/apk-signature.txt
-          $ANDROID_HOME/build-tools/36.0.0/aapt dump badging FranLuz_Home_Decor_2.8.10_Release.apk | head -n 8 | tee /tmp/franluz-signing/apk-badging.txt
-          $ANDROID_HOME/build-tools/36.0.0/aapt dump permissions FranLuz_Home_Decor_2.8.10_Release.apk | tee /tmp/franluz-signing/apk-permissions.txt
-          sha256sum FranLuz_Home_Decor_2.8.10_Release.apk | tee /tmp/franluz-signing/apk-sha256.txt
-          if grep -q 'android.permission.INTERNET' /tmp/franluz-signing/apk-permissions.txt; then echo 'INTERNET permission OK'; fi
-          if grep -Eq 'READ_SMS|SEND_SMS|READ_CONTACTS|RECORD_AUDIO|ACCESS_FINE_LOCATION|BIND_ACCESSIBILITY_SERVICE' /tmp/franluz-signing/apk-permissions.txt; then echo 'Unexpected sensitive permission found'; exit 1; fi
-
-      - name: Package signing-key backup
-        run: |
-          cd /tmp/franluz-signing
-          zip -9 "$GITHUB_WORKSPACE/FranLuz_Release_Signing_Key_Backup.zip" \
-            franluz-release.jks keystore-password.txt franluz-release-cert.pem certificate-info.txt README-SIGNING.txt apk-signature.txt apk-badging.txt apk-permissions.txt apk-sha256.txt
+          ls -lah app/build/outputs/apk/debug/
+          $ANDROID_HOME/build-tools/36.0.0/apksigner verify --verbose app/build/outputs/apk/debug/app-debug.apk
+          cp app/build/outputs/apk/debug/app-debug.apk BORDATTO_Android_v1.0.0.apk
 
       - uses: actions/upload-artifact@v4
         with:
-          name: FranLuz-Android-2.8.10-Release-APK
-          path: FranLuz_Home_Decor_2.8.10_Release.apk
-          retention-days: 90
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: FranLuz-Release-Signing-Key-Backup
-          path: FranLuz_Release_Signing_Key_Backup.zip
-          retention-days: 90
+          name: BORDATTO-Android-v1.0.0-APK
+          path: BORDATTO_Android_v1.0.0.apk
+          retention-days: 30
