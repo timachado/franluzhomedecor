@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace = "com.bordatto.app"
-    compileSdk = 36
+    compileSdk = 37
     defaultConfig {
         applicationId = "com.bordatto.app"
         minSdk = 26
