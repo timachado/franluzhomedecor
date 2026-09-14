@@ -20,8 +20,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.6.0'
-      - name: Apply BORDATTO 0.2.8 persistence and library
-        run: python3 .github/scripts/patch_bordatto_028.py
+      - name: Apply BORDATTO 0.2.9 multi-format core
+        run: python3 .github/scripts/patch_bordatto_029.py
       - name: Build debug APK
         working-directory: BORDATTO_Foundation_0.1
         run: gradle --no-daemon clean assembleDebug --stacktrace
@@ -30,12 +30,12 @@ jobs:
           APK="BORDATTO_Foundation_0.1/app/build/outputs/apk/debug/app-debug.apk"
           test -f "$APK"
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$APK"
-          cp "$APK" BORDATTO_0.2.8_Persistencia_Biblioteca_Teste.apk
-          sha256sum BORDATTO_0.2.8_Persistencia_Biblioteca_Teste.apk > BORDATTO_0.2.8_Persistencia_Biblioteca_Teste.apk.sha256
+          cp "$APK" BORDATTO_0.2.9_MultiFormato_PES_JEF_Teste.apk
+          sha256sum BORDATTO_0.2.9_MultiFormato_PES_JEF_Teste.apk > BORDATTO_0.2.9_MultiFormato_PES_JEF_Teste.apk.sha256
       - uses: actions/upload-artifact@v4
         with:
-          name: BORDATTO-0.2.8-Persistencia-Biblioteca-APK
+          name: BORDATTO-0.2.9-MultiFormato-PES-JEF-APK
           path: |
-            BORDATTO_0.2.8_Persistencia_Biblioteca_Teste.apk
-            BORDATTO_0.2.8_Persistencia_Biblioteca_Teste.apk.sha256
+            BORDATTO_0.2.9_MultiFormato_PES_JEF_Teste.apk
+            BORDATTO_0.2.9_MultiFormato_PES_JEF_Teste.apk.sha256
           retention-days: 30
