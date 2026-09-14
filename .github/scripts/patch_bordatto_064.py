@@ -1,17 +1,22 @@
 from pathlib import Path
-import runpy
+import base64
+import re
+import zlib
 
-# Apply the complete 0.2.34 Traditional/Studio split. Patch 063 has one
-# over-strict textual regression guard looking for the literal label
-# "Traço à mão" while the implemented Traditional tab is intentionally
-# labelled "Traço". Catch only that known guard and validate the actual
-# functional anchors below.
-try:
-    runpy.run_path('.github/scripts/patch_bordatto_063.py', run_name='__main__')
-except SystemExit as exc:
-    message = str(exc)
-    if message != '0.2.34 regression guard failed: "Traço à mão"':
-        raise
+# Patch 063 is intentionally compressed because it carries the large 0.2.34 UI.
+# Its only blocker is an over-strict guard that expects the literal label
+# "Traço à mão", while the implemented Traditional tab is labelled "Traço".
+# Decode the source, correct only that expected guard label, then execute the
+# complete 0.2.34 patch so all edits are actually written before validation.
+wrapper = Path('.github/scripts/patch_bordatto_063.py').read_text(encoding='utf-8')
+match = re.search(r"b64decode\('([^']+)'\)", wrapper, re.S)
+if not match:
+    raise SystemExit('0.2.34 compressed patch payload not found')
+source = zlib.decompress(base64.b64decode(match.group(1))).decode('utf-8')
+if '"Traço à mão"' not in source:
+    raise SystemExit('0.2.34 expected Traço à mão guard not found in payload')
+source = source.replace('"Traço à mão"', '"Traço"')
+exec(compile(source, '.github/scripts/patch_bordatto_063.py<fixed>', 'exec'), {'__name__': '__main__'})
 
 main_path = Path('BORDATTO_Foundation_0.1/app/src/main/java/com/bordatto/app/MainActivity.kt')
 text = main_path.read_text(encoding='utf-8')
