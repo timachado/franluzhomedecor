@@ -1,28 +1,54 @@
-name: Inspect BORDATTO Traditional Generation
+name: Build BORDATTO APK
 on:
   push:
     branches: [bordatto-apk-build]
   workflow_dispatch:
 
 jobs:
-  inspect:
+  build:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
     steps:
       - uses: actions/checkout@v4
-      - name: Reconstruct 0.2.35 and inspect Traditional generation
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Prepare Android SDK 36
         run: |
-          python3 .github/scripts/patch_bordatto_065.py
-          python3 - <<'PY'
-          from pathlib import Path
-          t=Path('BORDATTO_Foundation_0.1/app/src/main/java/com/bordatto/app/MainActivity.kt').read_text(encoding='utf-8')
-          keys=['onTraditionalGenerate','TraditionalQuick','TraditionalLettering','generateLetteringDesign(','TRADITIONAL_EDITOR','mergeTraditionalText034(']
-          for key in keys:
-              print('\n===',key,'===')
-              pos=0; n=0
-              while True:
-                  try: i=t.index(key,pos)
-                  except ValueError: break
-                  print(t[max(0,i-900):min(len(t),i+1400)])
-                  pos=i+len(key); n+=1
-                  if n>=8: break
-          PY
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
+          if [ ! -d "$ANDROID_HOME/platforms/android-36" ]; then
+            yes | "$SDKMANAGER" "platforms;android-36"
+          fi
+          if [ ! -x "$ANDROID_HOME/build-tools/36.0.0/apksigner" ]; then
+            yes | "$SDKMANAGER" "build-tools;36.0.0"
+          fi
+          test -d "$ANDROID_HOME/platforms/android-36"
+          test -x "$ANDROID_HOME/build-tools/36.0.0/apksigner"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.6.0'
+      - name: Apply BORDATTO 0.2.36 full-name Traditional simulation patch
+        run: python3 .github/scripts/patch_bordatto_066.py
+      - name: Build debug APK
+        working-directory: BORDATTO_Foundation_0.1
+        run: gradle --no-daemon clean assembleDebug --stacktrace
+      - name: Verify and rename APK
+        run: |
+          APK="BORDATTO_Foundation_0.1/app/build/outputs/apk/debug/app-debug.apk"
+          test -f "$APK"
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$APK"
+          cp "$APK" BORDATTO_0.2.36_Nome_Completo_Linha_Guia_Simulacao_Teste.apk
+          sha256sum BORDATTO_0.2.36_Nome_Completo_Linha_Guia_Simulacao_Teste.apk > BORDATTO_0.2.36_Nome_Completo_Linha_Guia_Simulacao_Teste.apk.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BORDATTO-0.2.36-Nome-Completo-Linha-Guia-Simulacao-APK
+          path: |
+            BORDATTO_0.2.36_Nome_Completo_Linha_Guia_Simulacao_Teste.apk
+            BORDATTO_0.2.36_Nome_Completo_Linha_Guia_Simulacao_Teste.apk.sha256
+          retention-days: 30
