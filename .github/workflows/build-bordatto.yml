@@ -17,19 +17,24 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - name: Prepare preinstalled Android SDK
+      - name: Prepare Android SDK 36
         run: |
           SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
           test -x "$SDKMANAGER"
           yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
-          yes | "$SDKMANAGER" "platforms;android-37" "build-tools;36.0.0" "platform-tools" || true
-          test -d "$ANDROID_HOME/platforms/android-37"
+          if [ ! -d "$ANDROID_HOME/platforms/android-36" ]; then
+            yes | "$SDKMANAGER" "platforms;android-36"
+          fi
+          if [ ! -x "$ANDROID_HOME/build-tools/36.0.0/apksigner" ]; then
+            yes | "$SDKMANAGER" "build-tools;36.0.0"
+          fi
+          test -d "$ANDROID_HOME/platforms/android-36"
           test -x "$ANDROID_HOME/build-tools/36.0.0/apksigner"
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.6.0'
       - name: Apply BORDATTO 0.2.31 live interaction patch
-        run: python3 .github/scripts/patch_bordatto_055.py
+        run: python3 .github/scripts/patch_bordatto_056.py
       - name: Build debug APK
         working-directory: BORDATTO_Foundation_0.1
         run: gradle --no-daemon clean assembleDebug --stacktrace
