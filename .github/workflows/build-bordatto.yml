@@ -1,41 +1,32 @@
-name: Build BORDATTO APK
+name: Diagnose BORDATTO 0.2.30 Source
 on:
   push:
     branches: [bordatto-apk-build]
-  workflow_dispatch:
 
 jobs:
-  build:
+  diagnose:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-      - uses: android-actions/setup-android@v3
-      - name: Install Android SDK 37
-        run: yes | sdkmanager "platforms;android-37" "build-tools;36.0.0" || true
-      - uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '9.6.0'
-      - name: Apply BORDATTO 0.2.30 simple interaction patch
+      - name: Apply 0.2.30
         run: python3 .github/scripts/patch_bordatto_053.py
-      - name: Build debug APK
-        working-directory: BORDATTO_Foundation_0.1
-        run: gradle --no-daemon clean assembleDebug --stacktrace
-      - name: Verify and rename APK
+      - name: Inspect declarations and brace depth
         run: |
-          APK="BORDATTO_Foundation_0.1/app/build/outputs/apk/debug/app-debug.apk"
-          test -f "$APK"
-          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$APK"
-          cp "$APK" BORDATTO_0.2.30_Interacao_Simples_Simulador_Teste.apk
-          sha256sum BORDATTO_0.2.30_Interacao_Simples_Simulador_Teste.apk > BORDATTO_0.2.30_Interacao_Simples_Simulador_Teste.apk.sha256
-      - uses: actions/upload-artifact@v4
-        with:
-          name: BORDATTO-0.2.30-Interacao-Simples-Simulador-APK
-          path: |
-            BORDATTO_0.2.30_Interacao_Simples_Simulador_Teste.apk
-            BORDATTO_0.2.30_Interacao_Simples_Simulador_Teste.apk.sha256
-          retention-days: 30
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('BORDATTO_Foundation_0.1/app/src/main/java/com/bordatto/app/MainActivity.kt')
+          s=p.read_text(encoding='utf-8')
+          needles=['appPrefs','data class MachineConfig','fun loadMachineConfig','data class LibraryItem','fun CostCalculatorScreen','private fun LetteringScreen','private fun MachineScreen','private fun EmbroiderySimulatorPanel']
+          for n in needles:
+              print(n, s.find(n))
+          depth=0
+          for i,line in enumerate(s.splitlines(),1):
+              clean=line.split('//')[0]
+              depth += clean.count('{')-clean.count('}')
+              if i in (120,145,180,192,850,900,929,1000,1200,1400,2000,2500,3000,3500,4000,4500): print('DEPTH',i,depth,line[:120])
+          print('FINAL_DEPTH',depth)
+          for lo,hi in [(110,210),(850,1030),(2500,2650)]:
+              print(f'---LINES {lo}-{hi}---')
+              for i,line in enumerate(s.splitlines(),1):
+                  if lo <= i <= hi: print(f'{i}: {line}')
+          PY
