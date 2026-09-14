@@ -21,7 +21,7 @@ jobs:
         with:
           gradle-version: '9.6.0'
       - name: Apply BORDATTO 0.2.22 color sequence manager
-        run: python3 .github/scripts/patch_bordatto_043.py
+        run: python3 .github/scripts/patch_bordatto_043_fix.py
       - name: Build debug APK
         working-directory: BORDATTO_Foundation_0.1
         run: gradle --no-daemon clean assembleDebug --stacktrace
