@@ -10,8 +10,8 @@ android {
         applicationId = "com.bordatto.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 14
-        versionName = "0.2.12"
+        versionCode = 15
+        versionName = "0.2.13"
     }
     buildFeatures { compose = true }
 }
