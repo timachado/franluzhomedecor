@@ -70,7 +70,7 @@ if old not in text: raise SystemExit('Library persist marker not found')
 text = text.replace(old, new, 1)
 
 # Accept only formats that are truly parsed in this build, then dispatch through the common model.
-old = '''                if (!name.lowercase().endsWith(".dst")) error("Nesta versão 0.2.1, a leitura real implementada continua sendo DST. Os demais formatos entrarão conforme forem validados.")
+old = '''                if (!name.lowercase().endsWith(".dst")) error("Nesta versão 0.2.8, a leitura real implementada continua sendo DST. Os demais formatos entrarão conforme forem validados.")
                 val bytes = resolver.openInputStream(uri)?.use { it.readBytes() } ?: error("Não foi possível ler o arquivo.")
                 parseDst(name, bytes)'''
 new = '''                val extension = name.substringAfterLast('.', "").lowercase()
@@ -157,7 +157,7 @@ private fun parseWithEmbroideryIo(fileName: String, bytes: ByteArray): Design {
     if (!minX.isFinite() || !minY.isFinite() || !maxX.isFinite() || !maxY.isFinite()) {
         error("Não foi possível obter as dimensões da matriz $extension.")
     }
-    val parsedName = pattern.name?.takeIf { it.isNotBlank() } ?: fileName.substringBeforeLast('.')
+    val parsedName = pattern.getName()?.takeIf { it.isNotBlank() } ?: fileName.substringBeforeLast('.')
     val actualColors = maxOf(1, color + 1)
     return Design(parsedName, pts, minX, minY, maxX, maxY, actualColors, extension)
 }
