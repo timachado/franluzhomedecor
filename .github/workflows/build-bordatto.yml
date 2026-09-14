@@ -33,8 +33,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.6.0'
-      - name: Apply BORDATTO 0.2.32 dual lettering mode patch
-        run: python3 .github/scripts/patch_bordatto_060.py
+      - name: Apply BORDATTO 0.2.33 traditional quick lettering patch
+        run: python3 .github/scripts/patch_bordatto_061.py
       - name: Build debug APK
         working-directory: BORDATTO_Foundation_0.1
         run: gradle --no-daemon clean assembleDebug --stacktrace
@@ -43,12 +43,12 @@ jobs:
           APK="BORDATTO_Foundation_0.1/app/build/outputs/apk/debug/app-debug.apk"
           test -f "$APK"
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$APK"
-          cp "$APK" BORDATTO_0.2.32_Modo_Rapido_Studio_Pro_Teste.apk
-          sha256sum BORDATTO_0.2.32_Modo_Rapido_Studio_Pro_Teste.apk > BORDATTO_0.2.32_Modo_Rapido_Studio_Pro_Teste.apk.sha256
+          cp "$APK" BORDATTO_0.2.33_Modo_Rapido_Tradicional_Studio_Pro_Teste.apk
+          sha256sum BORDATTO_0.2.33_Modo_Rapido_Tradicional_Studio_Pro_Teste.apk > BORDATTO_0.2.33_Modo_Rapido_Tradicional_Studio_Pro_Teste.apk.sha256
       - uses: actions/upload-artifact@v4
         with:
-          name: BORDATTO-0.2.32-Modo-Rapido-Studio-Pro-APK
+          name: BORDATTO-0.2.33-Modo-Rapido-Tradicional-Studio-Pro-APK
           path: |
-            BORDATTO_0.2.32_Modo_Rapido_Studio_Pro_Teste.apk
-            BORDATTO_0.2.32_Modo_Rapido_Studio_Pro_Teste.apk.sha256
+            BORDATTO_0.2.33_Modo_Rapido_Tradicional_Studio_Pro_Teste.apk
+            BORDATTO_0.2.33_Modo_Rapido_Tradicional_Studio_Pro_Teste.apk.sha256
           retention-days: 30
