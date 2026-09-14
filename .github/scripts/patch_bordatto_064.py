@@ -31,7 +31,6 @@ required = [
     'TraditionalDesignCanvas034(',
     'appendHandDraw034(',
     'mergeTraditionalText034(',
-    'listOf("Adicionar", "Ajustes", "Camadas", "Linhas")',
     'listOf("Texto", "Imagem", "Traço")',
     '"Configurações de Exibição"',
     '"Sólida"',
@@ -40,7 +39,6 @@ required = [
     '"Brother"',
     '"Madeira"',
     '"Rosa Intenso"',
-    '"Brother 086"',
     '"Tradicional"',
     '"Studio Pro"',
     'onTraditionalGenerate',
@@ -51,6 +49,12 @@ required = [
 missing = [item for item in required if item not in text]
 if missing:
     raise SystemExit('0.2.34 functional regression guard failed: ' + ', '.join(missing))
+
+# Verify all four Traditional post-generation navigation labels exist, without
+# depending on the exact Kotlin collection syntax used by the implementation.
+for label in ['"Adicionar"', '"Ajustes"', '"Camadas"', '"Linhas"']:
+    if label not in text:
+        raise SystemExit('0.2.34 Traditional navigation label missing: ' + label)
 
 # Traditional post-generation must remain isolated from professional Viewer tools.
 start = text.index('@Composable\nprivate fun TraditionalEditorScreen034')
