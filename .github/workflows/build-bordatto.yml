@@ -20,27 +20,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.6.0'
-      - name: Apply BORDATTO 0.2.27 Lettering Pro Satin
-        run: python3 .github/scripts/patch_bordatto_049.py
-      - name: Diagnose Viewer Info button
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          p=Path('BORDATTO_Foundation_0.1/app/src/main/java/com/bordatto/app/MainActivity.kt')
-          s=p.read_text(encoding='utf-8')
-          for needle in ['"Info"', 'showInfo', 'infoExpanded', 'Centralizar', 'Grade']:
-              print('\n===', needle, '===')
-              pos=0
-              found=0
-              while True:
-                  i=s.find(needle,pos)
-                  if i<0: break
-                  found+=1
-                  a=max(0,i-900); b=min(len(s),i+1300)
-                  print(s[a:b])
-                  pos=i+len(needle)
-              print('count=',found)
-          PY
+      - name: Apply BORDATTO 0.2.28 Viewer Info fix
+        run: python3 .github/scripts/patch_bordatto_050.py
       - name: Build debug APK
         working-directory: BORDATTO_Foundation_0.1
         run: gradle --no-daemon clean assembleDebug --stacktrace
@@ -49,12 +30,12 @@ jobs:
           APK="BORDATTO_Foundation_0.1/app/build/outputs/apk/debug/app-debug.apk"
           test -f "$APK"
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$APK"
-          cp "$APK" BORDATTO_0.2.27_Lettering_Pro_Satin_Teste.apk
-          sha256sum BORDATTO_0.2.27_Lettering_Pro_Satin_Teste.apk > BORDATTO_0.2.27_Lettering_Pro_Satin_Teste.apk.sha256
+          cp "$APK" BORDATTO_0.2.28_Viewer_Info_Fix_Teste.apk
+          sha256sum BORDATTO_0.2.28_Viewer_Info_Fix_Teste.apk > BORDATTO_0.2.28_Viewer_Info_Fix_Teste.apk.sha256
       - uses: actions/upload-artifact@v4
         with:
-          name: BORDATTO-0.2.27-Lettering-Pro-Satin-APK
+          name: BORDATTO-0.2.28-Viewer-Info-Fix-APK
           path: |
-            BORDATTO_0.2.27_Lettering_Pro_Satin_Teste.apk
-            BORDATTO_0.2.27_Lettering_Pro_Satin_Teste.apk.sha256
+            BORDATTO_0.2.28_Viewer_Info_Fix_Teste.apk
+            BORDATTO_0.2.28_Viewer_Info_Fix_Teste.apk.sha256
           retention-days: 30
