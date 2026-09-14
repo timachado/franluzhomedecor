@@ -20,8 +20,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.6.0'
-      - name: Apply safe BORDATTO 0.2.30 casual-first patch
-        run: python3 .github/scripts/patch_bordatto_054.py
+      - name: Apply BORDATTO 0.2.31 live interaction patch
+        run: python3 .github/scripts/patch_bordatto_055.py
       - name: Build debug APK
         working-directory: BORDATTO_Foundation_0.1
         run: gradle --no-daemon clean assembleDebug --stacktrace
@@ -30,12 +30,12 @@ jobs:
           APK="BORDATTO_Foundation_0.1/app/build/outputs/apk/debug/app-debug.apk"
           test -f "$APK"
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$APK"
-          cp "$APK" BORDATTO_0.2.30_Interacao_Simples_Simulador_Teste.apk
-          sha256sum BORDATTO_0.2.30_Interacao_Simples_Simulador_Teste.apk > BORDATTO_0.2.30_Interacao_Simples_Simulador_Teste.apk.sha256
+          cp "$APK" BORDATTO_0.2.31_Live_Sliders_Olho_Analyzer_Teste.apk
+          sha256sum BORDATTO_0.2.31_Live_Sliders_Olho_Analyzer_Teste.apk > BORDATTO_0.2.31_Live_Sliders_Olho_Analyzer_Teste.apk.sha256
       - uses: actions/upload-artifact@v4
         with:
-          name: BORDATTO-0.2.30-Interacao-Simples-Simulador-APK
+          name: BORDATTO-0.2.31-Live-Sliders-Olho-Analyzer-APK
           path: |
-            BORDATTO_0.2.30_Interacao_Simples_Simulador_Teste.apk
-            BORDATTO_0.2.30_Interacao_Simples_Simulador_Teste.apk.sha256
+            BORDATTO_0.2.31_Live_Sliders_Olho_Analyzer_Teste.apk
+            BORDATTO_0.2.31_Live_Sliders_Olho_Analyzer_Teste.apk.sha256
           retention-days: 30
