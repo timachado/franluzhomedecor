@@ -15,13 +15,13 @@ jobs:
       - name: Inspect Viewer and Analyzer anchors
         run: |
           SRC="BORDATTO_Foundation_0.1/app/src/main/java/com/bordatto/app/MainActivity.kt"
-          echo '=== visualDiagnostics state ==='
-          grep -n -B4 -A8 'visualDiagnostics' "$SRC" | head -80 || true
-          echo '=== focusMarker state ==='
-          grep -n -B4 -A8 'focusMarker by remember' "$SRC" || true
+          echo '=== Viewer state ==='
+          grep -n -B6 -A14 'focusMarker by remember' "$SRC" || true
           echo '=== static visibility badge ==='
-          grep -n -B5 -A5 'ExpressiveIconBadge(Icons.Rounded.Visibility' "$SRC" || true
-          echo '=== StitchCanvas call visibleUntil ==='
-          grep -n -B8 -A8 'visibleUntil = visibleUntil' "$SRC" | head -80 || true
+          grep -n -B8 -A8 'ExpressiveIconBadge(Icons.Rounded.Visibility' "$SRC" || true
+          echo '=== StitchCanvas calls ==='
+          grep -n -B10 -A16 'StitchCanvas(' "$SRC" | head -180 || true
+          echo '=== all visibleUntil assignments/calls ==='
+          grep -n -B3 -A3 'visibleUntil' "$SRC" | head -180 || true
           echo '=== Analyzer declaration ==='
-          grep -n -A120 'private fun DesignAnalyzerPanel' "$SRC" | head -140 || true
+          grep -n -A170 'private fun DesignAnalyzerPanel' "$SRC" | head -190 || true
