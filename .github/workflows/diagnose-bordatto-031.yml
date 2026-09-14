@@ -1,0 +1,27 @@
+name: Diagnose BORDATTO 0.2.31 Anchors
+on:
+  push:
+    branches: [bordatto-apk-build]
+    paths:
+      - '.github/workflows/diagnose-bordatto-031.yml'
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reconstruct validated 0.2.30 source
+        run: python3 .github/scripts/patch_bordatto_054.py
+      - name: Inspect Viewer and Analyzer anchors
+        run: |
+          SRC="BORDATTO_Foundation_0.1/app/src/main/java/com/bordatto/app/MainActivity.kt"
+          echo '=== visualDiagnostics state ==='
+          grep -n -B4 -A8 'visualDiagnostics' "$SRC" | head -80 || true
+          echo '=== focusMarker state ==='
+          grep -n -B4 -A8 'focusMarker by remember' "$SRC" || true
+          echo '=== static visibility badge ==='
+          grep -n -B5 -A5 'ExpressiveIconBadge(Icons.Rounded.Visibility' "$SRC" || true
+          echo '=== StitchCanvas call visibleUntil ==='
+          grep -n -B8 -A8 'visibleUntil = visibleUntil' "$SRC" | head -80 || true
+          echo '=== Analyzer declaration ==='
+          grep -n -A120 'private fun DesignAnalyzerPanel' "$SRC" | head -140 || true
