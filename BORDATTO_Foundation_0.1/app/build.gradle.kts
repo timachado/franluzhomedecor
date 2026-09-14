@@ -10,8 +10,8 @@ android {
         applicationId = "com.bordatto.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 10
-        versionName = "0.2.8"
+        versionCode = 11
+        versionName = "0.2.9"
     }
     buildFeatures { compose = true }
 }
@@ -26,4 +26,5 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+    implementation("com.github.EmbroidePy.EmbroideryIO:embroideryio-android:0.0.7")
 }
