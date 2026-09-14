@@ -33,8 +33,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.6.0'
-      - name: Apply BORDATTO 0.2.31 live interaction patch
-        run: python3 .github/scripts/patch_bordatto_056.py
+      - name: Apply corrected BORDATTO 0.2.31 live interaction patch
+        run: python3 .github/scripts/patch_bordatto_057.py
       - name: Build debug APK
         working-directory: BORDATTO_Foundation_0.1
         run: gradle --no-daemon clean assembleDebug --stacktrace
