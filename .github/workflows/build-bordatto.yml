@@ -1,22 +1,41 @@
-name: Diagnose BORDATTO Viewer
+name: Build BORDATTO APK
 on:
   push:
     branches: [bordatto-apk-build]
+  workflow_dispatch:
 
 jobs:
-  diagnose:
+  build:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - name: Rebuild cumulative 0.2.28 source
-        run: python3 .github/scripts/patch_bordatto_050.py
-      - name: Print ViewerScreen layout
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Install Android SDK 37
+        run: yes | sdkmanager "platforms;android-37" "build-tools;36.0.0" || true
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.6.0'
+      - name: Apply BORDATTO 0.2.29 responsive viewer and lettering fixes
+        run: python3 .github/scripts/patch_bordatto_051.py
+      - name: Build debug APK
+        working-directory: BORDATTO_Foundation_0.1
+        run: gradle --no-daemon clean assembleDebug --stacktrace
+      - name: Verify and rename APK
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          s=Path('BORDATTO_Foundation_0.1/app/src/main/java/com/bordatto/app/MainActivity.kt').read_text(encoding='utf-8')
-          start=s.index('@Composable\nprivate fun ViewerScreen')
-          end=s.find('@Composable\nprivate fun ', start+20)
-          if end < 0: end=min(len(s), start+45000)
-          print(s[start:end])
-          PY
+          APK="BORDATTO_Foundation_0.1/app/build/outputs/apk/debug/app-debug.apk"
+          test -f "$APK"
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$APK"
+          cp "$APK" BORDATTO_0.2.29_Viewer_Lettering_Fixes_Teste.apk
+          sha256sum BORDATTO_0.2.29_Viewer_Lettering_Fixes_Teste.apk > BORDATTO_0.2.29_Viewer_Lettering_Fixes_Teste.apk.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BORDATTO-0.2.29-Viewer-Lettering-Fixes-APK
+          path: |
+            BORDATTO_0.2.29_Viewer_Lettering_Fixes_Teste.apk
+            BORDATTO_0.2.29_Viewer_Lettering_Fixes_Teste.apk.sha256
+          retention-days: 30
