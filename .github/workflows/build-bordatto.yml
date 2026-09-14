@@ -20,8 +20,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.6.0'
-      - name: Apply BORDATTO 0.2.25 professional export preflight
-        run: python3 .github/scripts/patch_bordatto_046.py
+      - name: Apply BORDATTO 0.2.26 export traceability history
+        run: python3 .github/scripts/patch_bordatto_047.py
       - name: Build debug APK
         working-directory: BORDATTO_Foundation_0.1
         run: gradle --no-daemon clean assembleDebug --stacktrace
@@ -30,12 +30,12 @@ jobs:
           APK="BORDATTO_Foundation_0.1/app/build/outputs/apk/debug/app-debug.apk"
           test -f "$APK"
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$APK"
-          cp "$APK" BORDATTO_0.2.25_Preflight_Profissional_Exportacao_Teste.apk
-          sha256sum BORDATTO_0.2.25_Preflight_Profissional_Exportacao_Teste.apk > BORDATTO_0.2.25_Preflight_Profissional_Exportacao_Teste.apk.sha256
+          cp "$APK" BORDATTO_0.2.26_Historico_Rastreabilidade_Exportacao_Teste.apk
+          sha256sum BORDATTO_0.2.26_Historico_Rastreabilidade_Exportacao_Teste.apk > BORDATTO_0.2.26_Historico_Rastreabilidade_Exportacao_Teste.apk.sha256
       - uses: actions/upload-artifact@v4
         with:
-          name: BORDATTO-0.2.25-Preflight-Profissional-Exportacao-APK
+          name: BORDATTO-0.2.26-Historico-Rastreabilidade-Exportacao-APK
           path: |
-            BORDATTO_0.2.25_Preflight_Profissional_Exportacao_Teste.apk
-            BORDATTO_0.2.25_Preflight_Profissional_Exportacao_Teste.apk.sha256
+            BORDATTO_0.2.26_Historico_Rastreabilidade_Exportacao_Teste.apk
+            BORDATTO_0.2.26_Historico_Rastreabilidade_Exportacao_Teste.apk.sha256
           retention-days: 30
