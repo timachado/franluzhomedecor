@@ -9,27 +9,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Reconstruct BORDATTO 0.2.34 and inspect simulator
+      - name: Reconstruct and print Traditional simulator implementation
         run: |
           python3 .github/scripts/patch_bordatto_064.py
           python3 - <<'PY'
           from pathlib import Path
-          p=Path('BORDATTO_Foundation_0.1/app/src/main/java/com/bordatto/app/MainActivity.kt')
-          t=p.read_text(encoding='utf-8')
-          key='@Composable\nprivate fun TraditionalSimulatorScreen034'
-          s=t.index(key)
-          brace=t.index('{',s)
-          print('=== SIMULATOR SIGNATURE ===')
-          print(t[s:brace+1])
-          print('=== SIMULATOR CALL SITES ===')
-          pos=0
-          while True:
-              try: i=t.index('TraditionalSimulatorScreen034(',pos)
-              except ValueError: break
-              print(t[max(0,i-220):min(len(t),i+420)])
-              pos=i+1
-          print('=== DESIGN CANVAS SIGNATURE ===')
-          k='@Composable\nprivate fun TraditionalDesignCanvas034'
-          ds=t.index(k); db=t.index('{',ds)
-          print(t[ds:db+1])
+          t=Path('BORDATTO_Foundation_0.1/app/src/main/java/com/bordatto/app/MainActivity.kt').read_text(encoding='utf-8')
+          def block(signature):
+              s=t.index(signature); b=t.index('{',s); d=0
+              for i in range(b,len(t)):
+                  if t[i]=='{': d+=1
+                  elif t[i]=='}':
+                      d-=1
+                      if d==0: return t[s:i+1]
+              raise RuntimeError(signature)
+          print('=== SIMULATOR BODY ===')
+          print(block('@Composable\nprivate fun TraditionalSimulatorScreen034'))
+          print('=== DESIGN CANVAS BODY ===')
+          print(block('@Composable\nprivate fun TraditionalDesignCanvas034'))
           PY
