@@ -71,6 +71,9 @@ public sealed class StartupPage : ContentPage
             _status.Text = "Carregando editor…";
             var main = new MainPage();
             await Navigation.PushAsync(main, false);
+#if ANDROID
+            Android.Util.Log.Info("BORDATTO", "Editor ready");
+#endif
             Navigation.RemovePage(this);
         }
         catch (Exception ex)
@@ -79,7 +82,7 @@ public sealed class StartupPage : ContentPage
             _details.IsVisible = true;
             _details.Text = ex.ToString();
 #if ANDROID
-            Android.Util.Log.Error("BORDATTO", ex.ToString());
+            Android.Util.Log.Error("BORDATTO", "Editor startup failed: " + ex);
 #endif
         }
     }
