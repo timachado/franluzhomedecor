@@ -1,28 +1,19 @@
-name: Diagnose BORDATTO 0.2.31 Anchors
+name: Diagnose BORDATTO Hosted Runner
 on:
   push:
     branches: [bordatto-apk-build]
     paths:
       - '.github/workflows/diagnose-bordatto-031.yml'
+  workflow_dispatch:
 
 jobs:
-  diagnose:
-    runs-on: ubuntu-latest
+  probe:
+    runs-on: windows-latest
+    timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
-      - name: Reconstruct validated 0.2.30 source
-        run: python3 .github/scripts/patch_bordatto_054.py
-      - name: Inspect Viewer and Analyzer anchors
+      - name: Probe Windows hosted runner
+        shell: pwsh
         run: |
-          SRC="BORDATTO_Foundation_0.1/app/src/main/java/com/bordatto/app/MainActivity.kt"
-          echo '=== Viewer state ==='
-          grep -n -B6 -A14 'focusMarker by remember' "$SRC" || true
-          echo '=== static visibility badge ==='
-          grep -n -B8 -A8 'ExpressiveIconBadge(Icons.Rounded.Visibility' "$SRC" || true
-          echo '=== StitchCanvas calls ==='
-          grep -n -B10 -A16 'StitchCanvas(' "$SRC" | head -180 || true
-          echo '=== all visibleUntil assignments/calls ==='
-          grep -n -B3 -A3 'visibleUntil' "$SRC" | head -180 || true
-          echo '=== Analyzer declaration ==='
-          grep -n -A170 'private fun DesignAnalyzerPanel' "$SRC" | head -190 || true
-# runner probe 2026-09-15
+          Write-Host "BORDATTO runner probe"
+          Write-Host "OS: $([System.Environment]::OSVersion.VersionString)"
+          dotnet --info
