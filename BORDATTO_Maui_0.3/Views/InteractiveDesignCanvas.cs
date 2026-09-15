@@ -19,7 +19,7 @@ public sealed class InteractiveDesignCanvas : SKCanvasView
     private float _h;
 
     public EmbroideryDesign Design { get; set; } = new();
-    public float Scale { get; set; } = 1f;
+    public float DesignScale { get; set; } = 1f;
     public float RotationDegrees { get; set; }
     public float CenterX { get; set; } = .5f;
     public float CenterY { get; set; } = .5f;
@@ -46,14 +46,15 @@ public sealed class InteractiveDesignCanvas : SKCanvasView
         var hoop = new SKRect(pad,pad,w-pad,h-pad);
         using var hoopPaint = new SKPaint { Color = new SKColor(0x35,0x37,0x4B), Style=SKPaintStyle.Stroke, StrokeWidth=3, PathEffect=SKPathEffect.CreateDash([12,8],0), IsAntialias=true };
         c.DrawRoundRect(hoop,24,24,hoopPaint);
-        using var cap = new SKPaint { Color=new SKColor(0x72,0x6C,0x62), TextAlign=SKTextAlign.Center, TextSize=Math.Max(15,w*.022f), IsAntialias=true };
-        c.DrawText("Bastidor 100 × 100 mm",w/2f,hoop.Top+24,cap);
+        using var capFont = new SKFont(SKTypeface.Default, Math.Max(15,w*.022f));
+        using var capPaint = new SKPaint { Color=new SKColor(0x72,0x6C,0x62), IsAntialias=true };
+        c.DrawText("Bastidor 100 × 100 mm",w/2f,hoop.Top+24,SKTextAlign.Center,capFont,capPaint);
 
         var pts = Design.Stitches.Where(p=>p.Command is StitchCommand.Stitch or StitchCommand.Jump).ToList();
         if (pts.Count < 2) return;
         var minX=pts.Min(p=>p.X); var maxX=pts.Max(p=>p.X); var minY=pts.Min(p=>p.Y); var maxY=pts.Max(p=>p.Y);
         var dw=Math.Max(.1f,maxX-minX); var dh=Math.Max(.1f,maxY-minY);
-        var fit=Math.Min((hoop.Width*.86f)/dw,(hoop.Height*.72f)/dh) * Scale;
+        var fit=Math.Min((hoop.Width*.86f)/dw,(hoop.Height*.72f)/dh) * DesignScale;
         _center=new SKPoint(hoop.Left+CenterX*hoop.Width,hoop.Top+CenterY*hoop.Height);
         var localW=dw*fit; var localH=dh*fit;
         var left=-localW/2f; var top=-localH/2f;
@@ -112,7 +113,7 @@ public sealed class InteractiveDesignCanvas : SKCanvasView
                 {
                     var ids=_touches.Keys.Take(2).ToArray(); var a0=_previous[ids[0]]; var b0=_previous[ids[1]]; var a1=_touches[ids[0]]; var b1=_touches[ids[1]];
                     var oldMid=Mid(a0,b0); var newMid=Mid(a1,b1); var ov=new SKPoint(b0.X-a0.X,b0.Y-a0.Y); var nv=new SKPoint(b1.X-a1.X,b1.Y-a1.Y);
-                    Scale=Math.Clamp(Scale*Math.Max(1f,Length(nv))/Math.Max(1f,Length(ov)),.25f,4f);
+                    DesignScale=Math.Clamp(DesignScale*Math.Max(1f,Length(nv))/Math.Max(1f,Length(ov)),.25f,4f);
                     RotationDegrees=Normalize(RotationDegrees+Angle(nv)-Angle(ov)); Move(newMid.X-oldMid.X,newMid.Y-oldMid.Y);
                     _previous[ids[0]]=a1; _previous[ids[1]]=b1; Changed();
                 }
@@ -121,7 +122,7 @@ public sealed class InteractiveDesignCanvas : SKCanvasView
                     var prev=_previous[e.Id];
                     if(_gesture==GestureMode.Drag){Move(p.X-prev.X,p.Y-prev.Y);Changed();}
                     else if(_gesture==GestureMode.Rotate){RotationDegrees=Normalize(Angle(new SKPoint(p.X-_center.X,p.Y-_center.Y))+90f);Changed();}
-                    else if(_gesture==GestureMode.Resize){Scale=Math.Clamp(Scale*Math.Max(1f,Distance(p,_center))/Math.Max(1f,Distance(prev,_center)),.25f,4f);Changed();}
+                    else if(_gesture==GestureMode.Resize){DesignScale=Math.Clamp(DesignScale*Math.Max(1f,Distance(p,_center))/Math.Max(1f,Distance(prev,_center)),.25f,4f);Changed();}
                     _previous[e.Id]=p;
                 }
                 InvalidateSurface(); break;
