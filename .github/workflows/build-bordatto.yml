@@ -61,10 +61,10 @@ jobs:
           sudo rm -rf /opt/hostedtoolcache/CodeQL || true
           echo "Disk after cleanup"
           df -h /
-      - name: Android runtime smoke test
+      - name: Android 15 runtime smoke test
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 29
+          api-level: 35
           arch: x86_64
           profile: pixel_2
           ram-size: 1536M
@@ -76,18 +76,11 @@ jobs:
             adb logcat -c
             adb install -r "${{ steps.apk.outputs.path }}"
             adb shell monkey -p com.bordatto.app -c android.intent.category.LAUNCHER 1
-            sleep 12
-            echo "--- BORDATTO process ---"
-            adb shell pidof com.bordatto.app || true
-            echo "--- BORDATTO diagnostics ---"
-            adb logcat -d -v threadtime | grep -E "BORDATTO|AndroidRuntime|FATAL EXCEPTION|monodroid|DOTNET" | tail -300 || true
-            echo "--- crash buffer ---"
+            sleep 15
+            adb shell pidof com.bordatto.app
+            adb logcat -d -v threadtime | grep -E "BORDATTO|AndroidRuntime|FATAL EXCEPTION|monodroid|DOTNET" | tail -400 || true
             adb logcat -d -b crash -v threadtime || true
-            if ! adb shell pidof com.bordatto.app >/dev/null; then
-              echo "BORDATTO crashed during startup"
-              adb logcat -d -v threadtime | tail -900
-              exit 1
-            fi
+            adb logcat -d -v threadtime | grep -q "BORDATTO: Editor ready"
       - name: Verify and rename APK
         run: |
           APK="${{ steps.apk.outputs.path }}"
