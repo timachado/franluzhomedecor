@@ -76,11 +76,21 @@ jobs:
             adb logcat -c
             adb install -r "${{ steps.apk.outputs.path }}"
             adb shell monkey -p com.bordatto.app -c android.intent.category.LAUNCHER 1
-            sleep 15
-            adb shell pidof com.bordatto.app
-            adb logcat -d -v threadtime | grep -E "BORDATTO|AndroidRuntime|FATAL EXCEPTION|monodroid|DOTNET" | tail -400 || true
+            READY=0
+            for i in $(seq 1 18); do
+              sleep 5
+              adb shell pidof com.bordatto.app >/dev/null
+              if adb logcat -d -v threadtime | grep -q "BORDATTO: Editor ready"; then
+                READY=1
+                echo "BORDATTO editor ready after $((i * 5)) seconds"
+                break
+              fi
+            done
+            echo "--- BORDATTO diagnostics ---"
+            adb logcat -d -v threadtime | grep -E "BORDATTO|AndroidRuntime|FATAL EXCEPTION|monodroid|DOTNET" | tail -500 || true
+            echo "--- crash buffer ---"
             adb logcat -d -b crash -v threadtime || true
-            adb logcat -d -v threadtime | grep -q "BORDATTO: Editor ready"
+            test "$READY" -eq 1
       - name: Verify and rename APK
         run: |
           APK="${{ steps.apk.outputs.path }}"
