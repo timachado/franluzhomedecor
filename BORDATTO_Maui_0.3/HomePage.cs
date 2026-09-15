@@ -49,7 +49,7 @@ public sealed class HomePage : ContentPage
             StrokeThickness = 1,
             BackgroundColor = BordattoColors.Panel,
             Padding = new Thickness(12, 8),
-            Content = Label("0.3.3 • MAUI/SKIA", 9, BordattoColors.Gold, FontAttributes.Bold)
+            Content = Label("0.3.6 • MAUI/SKIA", 9, BordattoColors.Gold, FontAttributes.Bold)
         };
         var g = new Grid
         {
@@ -130,7 +130,7 @@ public sealed class HomePage : ContentPage
         };
         var heroStack = new VerticalStackLayout { Spacing = 10 };
         heroStack.Add(Label("Criar novo bordado", 22, BordattoColors.Cream, FontAttributes.Bold));
-        heroStack.Add(Label("Tradicional para um fluxo simples ou Studio Pro com controles técnicos. Os dois usam o mesmo motor Satin por eixo do traço.", 12, BordattoColors.Muted));
+        heroStack.Add(Label("Tradicional para um fluxo simples ou Studio Pro com controles técnicos. Os dois usam o motor Satin adaptativo com correção de contraformas.", 12, BordattoColors.Muted));
         var create = Primary("✦  NOVO BORDADO");
         create.Clicked += async (_, _) => await Navigation.PushAsync(new MainPage(BordattoMode.Tradicional));
         heroStack.Add(create);
@@ -145,15 +145,15 @@ public sealed class HomePage : ContentPage
             RowDefinitions = { new RowDefinition(GridLength.Auto), new RowDefinition(GridLength.Auto), new RowDefinition(GridLength.Auto) }
         };
         AddTool(tools, 0, 0, "Aa", "Lettering", "Tradicional", async () => await Navigation.PushAsync(new MainPage(BordattoMode.Tradicional)));
-        AddTool(tools, 1, 0, "✦", "Studio Pro", "Mesmo motor + controles", async () => await Navigation.PushAsync(new MainPage(BordattoMode.StudioPro)));
+        AddTool(tools, 1, 0, "✦", "Studio Pro", "Editor responsivo + aba PRO", async () => await Navigation.PushAsync(new MainPage(BordattoMode.StudioPro)));
         AddTool(tools, 0, 1, "⚙", "Máquina", "Perfil, velocidade e bastidor", async () => await Navigation.PushAsync(new MachinePage()));
         AddTool(tools, 1, 1, "R$", "Custos", "Tempo e produção", async () => await Navigation.PushAsync(new CostPage()));
         AddTool(tools, 0, 2, "▶", "Simulação", "Abra pelo editor da matriz", async () => await DisplayAlertAsync("Simulação", "Crie uma matriz e toque no botão ▶ do editor para executar a sequência real de pontadas.", "OK"));
         AddTool(tools, 1, 2, "✓", "Machine Check", "Validação pelo perfil salvo", async () => await ShowMachineCheckInfo());
         stack.Add(tools);
 
-        stack.Add(Label("Motor 0.3.3", 15, BordattoColors.Cream, FontAttributes.Bold));
-        stack.Add(Card("Satin orientado ao traço", "Skeleton/eixo da letra → underlay local → pares de Satin esquerda/direita → próximo traço. Isso substitui a varredura que aparecia no vídeo anterior."));
+        stack.Add(Label("Motor 0.3.5 • Editor 0.3.6", 15, BordattoColors.Cream, FontAttributes.Bold));
+        stack.Add(Card("Satin adaptativo", "Eixo local da letra → underlay → pares Satin pelas bordas reais → correção de contraformas e deslocamentos locais. O editor 0.3.6 acrescenta manipulação direta no bastidor."));
         return new ScrollView { Content = stack };
     }
 
@@ -161,7 +161,7 @@ public sealed class HomePage : ContentPage
     {
         var stack = PageStack("Criar", "Escolha como começar seu bordado.");
         stack.Add(ActionCard("Aa", "Lettering Tradicional", "Texto → matriz → editor → simulação", async () => await Navigation.PushAsync(new MainPage(BordattoMode.Tradicional))));
-        stack.Add(ActionCard("✦", "Lettering Studio Pro", "Mesmo motor com densidade, compensação e underlay avançados", async () => await Navigation.PushAsync(new MainPage(BordattoMode.StudioPro))));
+        stack.Add(ActionCard("✦", "Lettering Studio Pro", "Editor responsivo + densidade, compensação, underlay e Satin", async () => await Navigation.PushAsync(new MainPage(BordattoMode.StudioPro))));
         stack.Add(ActionCard("▧", "Abrir matriz", "Selecionar um arquivo do aparelho", PickMatrixAsync));
         stack.Add(Card("Imagem / desenho", "O digitalizador visual ainda está em portabilidade para MAUI. Ele permanece visível no fluxo para não desaparecer do aplicativo."));
         return new ScrollView { Content = stack };
@@ -199,10 +199,10 @@ public sealed class HomePage : ContentPage
     private View BuildProfile()
     {
         var stack = PageStack("Perfil", "Configurações do BORDATTO Studio.");
-        stack.Add(Card("Versão", "0.3.3 • .NET MAUI 10 • SkiaSharp 4.152"));
+        stack.Add(Card("Versão", "0.3.6 • .NET MAUI 10 • SkiaSharp 4.152"));
         stack.Add(ActionCard("⚙", "Configuração da máquina", "Velocidade e bastidor", async () => await Navigation.PushAsync(new MachinePage())));
         stack.Add(ActionCard("R$", "Calculadora de custos", "Linha, máquina e tempo", async () => await Navigation.PushAsync(new CostPage())));
-        stack.Add(Card("Tradicional + Studio Pro", "Os dois modos compartilham o mesmo digitizador. O Studio Pro apenas expõe parâmetros técnicos adicionais."));
+        stack.Add(Card("Tradicional + Studio Pro", "Os dois modos compartilham o motor Satin adaptativo. O Studio Pro expõe uma aba PRO dedicada aos parâmetros técnicos."));
         return new ScrollView { Content = stack };
     }
 

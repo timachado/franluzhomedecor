@@ -3,8 +3,8 @@ using BordattoStudio.Views;
 
 namespace BordattoStudio;
 
-// 0.3.6: editor de nome no bastidor seguindo a interação do vídeo de referência.
-// O bastidor é a área principal; ajustes técnicos ficam em painel separado.
+// 0.3.6: editor responsivo de nome no bastidor, com interação inspirada no vídeo de referência.
+// O bastidor é a área principal e os parâmetros técnicos do Studio Pro vivem numa aba PRO própria.
 public sealed class MainPage : ContentPage
 {
     private readonly TextObjectModel _model = new();
@@ -18,6 +18,7 @@ public sealed class MainPage : ContentPage
     private readonly Entry _entry;
     private readonly Button _generateButton;
     private readonly Border _toolsPanel;
+    private readonly Dictionary<string, Button> _tabButtons = new(StringComparer.OrdinalIgnoreCase);
     private string _activeTab = "Fonte";
     private bool _generating;
 
@@ -29,7 +30,7 @@ public sealed class MainPage : ContentPage
         _canvas = new InteractiveTextCanvas036
         {
             Model = _model,
-            MinimumHeightRequest = 230
+            MinimumHeightRequest = 210
         };
         _canvas.ModelChanged += (_, _) => { };
 
@@ -50,7 +51,7 @@ public sealed class MainPage : ContentPage
         };
         _entry.TextChanged += (_, e) =>
         {
-            var value = e.NewTextValue ?? "";
+            var value = e.NewTextValue ?? string.Empty;
             _model.Text = string.IsNullOrWhiteSpace(value) ? " " : value[..Math.Min(28, value.Length)];
             _canvas.Selected = true;
             _canvas.InvalidateSurface();
@@ -67,7 +68,7 @@ public sealed class MainPage : ContentPage
             TextColor = Color.FromArgb("#17100C"),
             FontAttributes = FontAttributes.Bold,
             FontSize = 13,
-            HeightRequest = 54,
+            HeightRequest = 52,
             CornerRadius = 16
         };
         _generateButton.Clicked += async (_, _) => await GenerateAsync();
@@ -90,9 +91,8 @@ public sealed class MainPage : ContentPage
         root.Add(_toolsPanel); root.SetRow(_toolsPanel, 2);
         Content = root;
 
-        // Durante a digitação o painel inferior some e o bastidor recebe a área livre.
-        // Se o sistema fechar o teclado ao tocar no canvas, o painel continua recolhido;
-        // o botão "Concluir" do topo é quem volta aos ajustes, como no fluxo de referência.
+        // Durante a digitação o painel inferior some e o bastidor recebe toda a área livre.
+        // O botão "Concluir" restaura os ajustes sem gerar a matriz automaticamente.
         _entry.Focused += (_, _) =>
         {
             _toolsPanel.IsVisible = false;
@@ -100,6 +100,7 @@ public sealed class MainPage : ContentPage
             _canvas.InvalidateSurface();
         };
 
+        SizeChanged += (_, _) => ApplyResponsiveLayout();
         SetMode(initialMode);
         ShowTab("Fonte");
     }
@@ -152,7 +153,7 @@ public sealed class MainPage : ContentPage
             Padding = new Thickness(6, 0)
         };
 
-        var hint = NewLabel("Arraste o nome • ↻ gire • ↗ redimensione • 2 dedos: mover + girar + zoom", 9, BordattoColors.Muted);
+        var hint = NewLabel("Arraste • ↻ gire • ↗ redimensione • 2 dedos: mover + girar + zoom", 9, BordattoColors.Muted);
 
         var stack = new VerticalStackLayout
         {
@@ -182,38 +183,33 @@ public sealed class MainPage : ContentPage
         modeSwitcher.Add(_traditionalButton); modeSwitcher.SetColumn(_traditionalButton, 0);
         modeSwitcher.Add(_studioButton); modeSwitcher.SetColumn(_studioButton, 1);
 
-        var tabs = new Grid
-        {
-            ColumnSpacing = 5,
-            ColumnDefinitions =
-            {
-                new ColumnDefinition(GridLength.Star),
-                new ColumnDefinition(GridLength.Star),
-                new ColumnDefinition(GridLength.Star),
-                new ColumnDefinition(GridLength.Star)
-            }
-        };
-        var names = new[] { "Fonte", "Tamanho", "Cor", "Estilo" };
+        var tabs = new Grid { ColumnSpacing = 4 };
+        for (var i = 0; i < 5; i++)
+            tabs.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
+
+        var names = new[] { "Fonte", "Tamanho", "Cor", "Estilo", "PRO" };
         for (var i = 0; i < names.Length; i++)
         {
-            var n = names[i];
+            var name = names[i];
             var b = new Button
             {
-                Text = n,
-                FontSize = 11,
-                HeightRequest = 42,
-                CornerRadius = 13,
+                Text = name,
+                FontSize = 10,
+                HeightRequest = 40,
+                CornerRadius = 12,
                 BackgroundColor = Color.FromArgb("#351D13"),
-                TextColor = BordattoColors.Cream
+                TextColor = BordattoColors.Cream,
+                Padding = new Thickness(2)
             };
-            b.Clicked += (_, _) => ShowTab(n);
+            b.Clicked += (_, _) => ShowTab(name);
+            _tabButtons[name] = b;
             tabs.Add(b); tabs.SetColumn(b, i);
         }
 
         var content = new VerticalStackLayout
         {
-            Spacing = 9,
-            Padding = new Thickness(16, 11, 16, 14),
+            Spacing = 8,
+            Padding = new Thickness(14, 10, 14, 12),
             Children = { modeSwitcher, tabs, _optionsHost, _modeHint, _generateButton }
         };
 
@@ -222,15 +218,27 @@ public sealed class MainPage : ContentPage
             Stroke = Color.FromArgb("#4B2A1B"),
             StrokeThickness = 1,
             BackgroundColor = Color.FromArgb("#21120D"),
-            HeightRequest = 238,
+            HeightRequest = 220,
             Content = new ScrollView { Content = content }
         };
+    }
+
+    private void ApplyResponsiveLayout()
+    {
+        if (Height <= 0) return;
+
+        // Em telas menores o painel cede espaço ao bastidor; o conteúdo técnico continua rolável.
+        var panelHeight = Height < 680 ? 176 : Height < 760 ? 192 : Height < 860 ? 212 : 238;
+        _toolsPanel.HeightRequest = panelHeight;
+        _canvas.MinimumHeightRequest = Height < 680 ? 170 : Height < 760 ? 190 : 220;
+        _canvas.InvalidateSurface();
     }
 
     private void FinishTextEditing()
     {
         _entry.Unfocus();
         _toolsPanel.IsVisible = true;
+        ApplyResponsiveLayout();
         _canvas.Selected = true;
         _canvas.InvalidateSurface();
     }
@@ -241,40 +249,54 @@ public sealed class MainPage : ContentPage
         _settings = mode == BordattoMode.Tradicional
             ? EngineSettings.TraditionalPreset()
             : EngineSettings.StudioPreset();
+
         _traditionalButton.BackgroundColor = mode == BordattoMode.Tradicional ? BordattoColors.Gold : BordattoColors.PanelSoft;
         _traditionalButton.TextColor = mode == BordattoMode.Tradicional ? Color.FromArgb("#19100B") : BordattoColors.Cream;
         _studioButton.BackgroundColor = mode == BordattoMode.StudioPro ? BordattoColors.Gold : BordattoColors.PanelSoft;
         _studioButton.TextColor = mode == BordattoMode.StudioPro ? Color.FromArgb("#19100B") : BordattoColors.Cream;
         _modeHint.Text = mode == BordattoMode.Tradicional
             ? "TRADICIONAL • simples, direto e funcional"
-            : "STUDIO PRO • Satin adaptativo + ajustes técnicos avançados";
+            : "STUDIO PRO • Satin adaptativo + controles técnicos";
+
+        if (_tabButtons.TryGetValue("PRO", out var pro))
+        {
+            pro.IsEnabled = mode == BordattoMode.StudioPro;
+            pro.Opacity = mode == BordattoMode.StudioPro ? 1 : .42;
+        }
+
+        if (mode == BordattoMode.Tradicional && _activeTab.Equals("PRO", StringComparison.OrdinalIgnoreCase))
+            _activeTab = "Fonte";
+
         ShowTab(_activeTab);
     }
 
     private void ShowTab(string name)
     {
+        if (name.Equals("PRO", StringComparison.OrdinalIgnoreCase) && _mode != BordattoMode.StudioPro)
+            name = "Fonte";
+
         _activeTab = name;
+        foreach (var pair in _tabButtons)
+        {
+            var selected = pair.Key.Equals(name, StringComparison.OrdinalIgnoreCase);
+            pair.Value.BackgroundColor = selected ? BordattoColors.Gold : Color.FromArgb("#351D13");
+            pair.Value.TextColor = selected ? Color.FromArgb("#19100B") : BordattoColors.Cream;
+        }
+
         _optionsHost.Clear();
         if (name == "Fonte") BuildFontOptions();
         else if (name == "Tamanho") BuildSizeOptions();
         else if (name == "Cor") BuildColorOptions();
-        else BuildStyleOptions();
-        if (_mode == BordattoMode.StudioPro) BuildProfessionalOptions();
+        else if (name == "Estilo") BuildStyleOptions();
+        else BuildProfessionalOptions();
     }
 
     private void BuildFontOptions()
     {
-        var grid = new Grid
-        {
-            ColumnSpacing = 6,
-            ColumnDefinitions =
-            {
-                new ColumnDefinition(GridLength.Star),
-                new ColumnDefinition(GridLength.Star),
-                new ColumnDefinition(GridLength.Star),
-                new ColumnDefinition(GridLength.Star)
-            }
-        };
+        var grid = new Grid { ColumnSpacing = 6 };
+        for (var i = 0; i < 4; i++)
+            grid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
+
         var fonts = new (string Label, string Family, bool Bold, bool Italic)[]
         {
             ("Regular", "sans-serif", false, false),
@@ -288,19 +310,19 @@ public sealed class MainPage : ContentPage
             var b = new Button
             {
                 Text = $"Aa\n{f.Label}",
-                FontSize = 13,
-                HeightRequest = 62,
-                CornerRadius = 13,
+                FontSize = 12,
+                HeightRequest = 60,
+                CornerRadius = 12,
                 BackgroundColor = BordattoColors.PanelSoft,
-                TextColor = BordattoColors.Cream
+                TextColor = BordattoColors.Cream,
+                Padding = new Thickness(2)
             };
             b.Clicked += (_, _) =>
             {
                 _model.FontFamily = f.Family;
                 _model.Bold = f.Bold;
                 _model.Italic = f.Italic;
-                _canvas.Selected = true;
-                _canvas.InvalidateSurface();
+                RefreshCanvas();
             };
             grid.Add(b); grid.SetColumn(b, i);
         }
@@ -309,7 +331,7 @@ public sealed class MainPage : ContentPage
 
     private void BuildSizeOptions()
     {
-        var value = NewLabel($"{_model.HeightMm:0.0} mm", 18, BordattoColors.Gold, FontAttributes.Bold);
+        var value = NewLabel($"Altura: {_model.HeightMm:0.0} mm", 16, BordattoColors.Gold, FontAttributes.Bold);
         var slider = new Slider
         {
             Minimum = 5,
@@ -322,9 +344,8 @@ public sealed class MainPage : ContentPage
         slider.ValueChanged += (_, e) =>
         {
             _model.HeightMm = (float)e.NewValue;
-            value.Text = $"{_model.HeightMm:0.0} mm";
-            _canvas.Selected = true;
-            _canvas.InvalidateSurface();
+            value.Text = $"Altura: {_model.HeightMm:0.0} mm";
+            RefreshCanvas();
         };
         _optionsHost.Add(value);
         _optionsHost.Add(slider);
@@ -332,18 +353,10 @@ public sealed class MainPage : ContentPage
 
     private void BuildColorOptions()
     {
-        var grid = new Grid
-        {
-            ColumnSpacing = 8,
-            ColumnDefinitions =
-            {
-                new ColumnDefinition(GridLength.Star),
-                new ColumnDefinition(GridLength.Star),
-                new ColumnDefinition(GridLength.Star),
-                new ColumnDefinition(GridLength.Star),
-                new ColumnDefinition(GridLength.Star)
-            }
-        };
+        var grid = new Grid { ColumnSpacing = 8 };
+        for (var i = 0; i < 5; i++)
+            grid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
+
         var colors = new uint[] { 0xFF000000, 0xFFFFC6D9, 0xFFF15A91, 0xFFE51664, 0xFFB91F4B };
         for (var i = 0; i < colors.Length; i++)
         {
@@ -353,15 +366,14 @@ public sealed class MainPage : ContentPage
                 Text = "●",
                 FontSize = 26,
                 HeightRequest = 50,
-                CornerRadius = 13,
+                CornerRadius = 12,
                 BackgroundColor = BordattoColors.PanelSoft,
                 TextColor = Color.FromArgb($"#{argb:X8}")
             };
             b.Clicked += (_, _) =>
             {
                 _model.Color = argb;
-                _canvas.Selected = true;
-                _canvas.InvalidateSurface();
+                RefreshCanvas();
             };
             grid.Add(b); grid.SetColumn(b, i);
         }
@@ -370,36 +382,19 @@ public sealed class MainPage : ContentPage
 
     private void BuildStyleOptions()
     {
-        var row = new Grid
-        {
-            ColumnSpacing = 8,
-            ColumnDefinitions =
-            {
-                new ColumnDefinition(GridLength.Star),
-                new ColumnDefinition(GridLength.Star),
-                new ColumnDefinition(GridLength.Star)
-            }
-        };
-        var bold = Segment("Negrito", () =>
-        {
-            _model.Bold = !_model.Bold;
-            _canvas.Selected = true;
-            _canvas.InvalidateSurface();
-        });
-        var italic = Segment("Itálico", () =>
-        {
-            _model.Italic = !_model.Italic;
-            _canvas.Selected = true;
-            _canvas.InvalidateSurface();
-        });
-        var reset = Segment("↻ 0°", () =>
+        var row = new Grid { ColumnSpacing = 8 };
+        for (var i = 0; i < 3; i++)
+            row.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
+
+        var bold = Segment("Negrito", () => { _model.Bold = !_model.Bold; RefreshCanvas(); });
+        var italic = Segment("Itálico", () => { _model.Italic = !_model.Italic; RefreshCanvas(); });
+        var reset = Segment("↻ Reset", () =>
         {
             _model.RotationDegrees = 0;
             _model.Scale = 1;
             _model.CenterX = .5f;
             _model.CenterY = .5f;
-            _canvas.Selected = true;
-            _canvas.InvalidateSurface();
+            RefreshCanvas();
         });
         row.Add(bold); row.Add(italic); row.Add(reset);
         row.SetColumn(italic, 1); row.SetColumn(reset, 2);
@@ -409,13 +404,27 @@ public sealed class MainPage : ContentPage
     private void BuildProfessionalOptions()
     {
         _optionsHost.Add(NewLabel("Ajustes Studio Pro", 12, BordattoColors.Gold, FontAttributes.Bold));
+        _optionsHost.Add(NewLabel("Esses parâmetros afetam a matriz gerada; o texto no bastidor mantém sua forma visual.", 9, BordattoColors.Muted));
+
         AddProSlider("Densidade Satin", .12, .80, _settings.DensityMm, "mm", v => _settings.DensityMm = (float)v);
         AddProSlider("Compensação", 0, 1.0, _settings.PullCompensationMm, "mm", v => _settings.PullCompensationMm = (float)v);
         AddProSlider("Largura máxima Satin", 4, 14, _settings.SatinMaxWidthMm, "mm", v => _settings.SatinMaxWidthMm = (float)v);
+        AddProSlider("Comprimento base", 1.0, 4.0, _settings.StitchLengthMm, "mm", v => _settings.StitchLengthMm = (float)v);
+        AddProToggle("Underlay central", _settings.CenterUnderlay, value => _settings.CenterUnderlay = value);
+        AddProToggle("Underlay de borda", _settings.EdgeUnderlay, value => _settings.EdgeUnderlay = value);
     }
 
     private void AddProSlider(string title, double min, double max, double current, string suffix, Action<double> changed)
     {
+        var row = new Grid
+        {
+            ColumnDefinitions =
+            {
+                new ColumnDefinition(GridLength.Star),
+                new ColumnDefinition(new GridLength(150))
+            },
+            ColumnSpacing = 10
+        };
         var label = NewLabel($"{title}: {current:0.00} {suffix}", 10, BordattoColors.Cream);
         var slider = new Slider
         {
@@ -431,13 +440,49 @@ public sealed class MainPage : ContentPage
             changed(e.NewValue);
             label.Text = $"{title}: {e.NewValue:0.00} {suffix}";
         };
-        _optionsHost.Add(label);
-        _optionsHost.Add(slider);
+        row.Add(label); row.SetColumn(label, 0);
+        row.Add(slider); row.SetColumn(slider, 1);
+        _optionsHost.Add(row);
+    }
+
+    private void AddProToggle(string title, bool current, Action<bool> changed)
+    {
+        var row = new Grid
+        {
+            ColumnDefinitions =
+            {
+                new ColumnDefinition(GridLength.Star),
+                new ColumnDefinition(GridLength.Auto)
+            }
+        };
+        var label = NewLabel(title, 10, BordattoColors.Cream);
+        var toggle = new Switch
+        {
+            IsToggled = current,
+            OnColor = BordattoColors.Gold,
+            ThumbColor = BordattoColors.Cream
+        };
+        toggle.Toggled += (_, e) => changed(e.Value);
+        row.Add(label); row.SetColumn(label, 0);
+        row.Add(toggle); row.SetColumn(toggle, 1);
+        _optionsHost.Add(row);
+    }
+
+    private void RefreshCanvas()
+    {
+        _canvas.Selected = true;
+        _canvas.InvalidateSurface();
     }
 
     private async Task GenerateAsync()
     {
         if (_generating) return;
+        if (string.IsNullOrWhiteSpace(_model.Text))
+        {
+            await DisplayAlertAsync("BORDATTO", "Digite um nome antes de gerar a matriz.", "OK");
+            return;
+        }
+
         FinishTextEditing();
         _generating = true;
         var oldText = _generateButton.Text;
@@ -468,8 +513,8 @@ public sealed class MainPage : ContentPage
             Text = text,
             BackgroundColor = BordattoColors.PanelSoft,
             TextColor = BordattoColors.Cream,
-            HeightRequest = 46,
-            CornerRadius = 14,
+            HeightRequest = 44,
+            CornerRadius = 13,
             FontAttributes = FontAttributes.Bold,
             FontSize = 11
         };
