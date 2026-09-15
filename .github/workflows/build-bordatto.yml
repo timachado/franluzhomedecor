@@ -53,18 +53,15 @@ jobs:
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$APK"
       - name: Free disk for Android runtime test
         run: |
-          echo "Disk before cleanup"
-          df -h /
           rm -rf BORDATTO_Maui_0.3/obj || true
           rm -rf "$HOME/.nuget/packages" || true
           sudo rm -rf /usr/share/dotnet/packs || true
           sudo rm -rf /opt/hostedtoolcache/CodeQL || true
-          echo "Disk after cleanup"
           df -h /
-      - name: Android 15 runtime smoke test
+      - name: Stable Android runtime smoke test
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 35
+          api-level: 29
           arch: x86_64
           profile: pixel_2
           ram-size: 1536M
@@ -86,9 +83,7 @@ jobs:
                 break
               fi
             done
-            echo "--- BORDATTO diagnostics ---"
             adb logcat -d -v threadtime | grep -E "BORDATTO|AndroidRuntime|FATAL EXCEPTION|monodroid|DOTNET" | tail -500 || true
-            echo "--- crash buffer ---"
             adb logcat -d -b crash -v threadtime || true
             test "$READY" -eq 1
       - name: Verify and rename APK
