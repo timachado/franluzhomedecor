@@ -60,29 +60,29 @@ public sealed class StartupPage : ContentPage
         base.OnAppearing();
         if (_started) return;
         _started = true;
-        Dispatcher.Dispatch(async () => await OpenEditorAsync());
+        Dispatcher.Dispatch(async () => await OpenAppAsync());
     }
 
-    private async Task OpenEditorAsync()
+    private async Task OpenAppAsync()
     {
         try
         {
-            await Task.Delay(350);
-            _status.Text = "Carregando editor…";
-            var main = new MainPage();
-            await Navigation.PushAsync(main, false);
+            await Task.Delay(250);
+            _status.Text = "Carregando BORDATTO…";
+            var home = new HomePage();
+            await Navigation.PushAsync(home, false);
 #if ANDROID
-            Android.Util.Log.Info("BORDATTO", "Editor ready");
+            Android.Util.Log.Info("BORDATTO", "App shell ready");
 #endif
             Navigation.RemovePage(this);
         }
         catch (Exception ex)
         {
-            _status.Text = "Falha ao inicializar o editor";
+            _status.Text = "Falha ao inicializar o aplicativo";
             _details.IsVisible = true;
             _details.Text = ex.ToString();
 #if ANDROID
-            Android.Util.Log.Error("BORDATTO", "Editor startup failed: " + ex);
+            Android.Util.Log.Error("BORDATTO", "App startup failed: " + ex);
 #endif
         }
     }
