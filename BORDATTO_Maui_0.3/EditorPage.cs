@@ -48,7 +48,7 @@ public sealed class EditorPage : ContentPage
         title.Add(LabelText($"{(_mode == BordattoMode.Tradicional ? "TRADICIONAL" : "STUDIO PRO")} · {_design.StitchCount:N0} pts · 1 cor", 10, BordattoColors.Muted));
         var badge = new Border { Stroke = Color.FromArgb("#4B2A1B"), StrokeThickness = 1, BackgroundColor = BordattoColors.PanelSoft, Padding = new Thickness(14, 8), Content = LabelText(_mode == BordattoMode.Tradicional ? "TRADICIONAL" : "STUDIO PRO", 10, BordattoColors.Gold, FontAttributes.Bold) };
         var g = new Grid { Padding = new Thickness(14, 12, 14, 8), ColumnDefinitions = { new ColumnDefinition(GridLength.Auto), new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Auto) } };
-        g.Add(back); g.Add(title); g.Add(badge); Grid.SetColumn(title, 1); Grid.SetColumn(badge, 2);
+        g.Add(back); g.Add(title); g.Add(badge); g.SetColumn(title, 1); g.SetColumn(badge, 2);
         return g;
     }
 
@@ -59,7 +59,7 @@ public sealed class EditorPage : ContentPage
         left.Add(LabelText("Dê um nome ao seu bordado", 13, BordattoColors.Cream));
         var name = new Button { Text = "Nomear", TextColor = BordattoColors.Gold, BackgroundColor = Colors.Transparent, FontAttributes = FontAttributes.Bold, FontSize = 12 };
         var g = new Grid { Padding = new Thickness(22, 12), BackgroundColor = BordattoColors.Panel, ColumnDefinitions = { new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Auto) } };
-        g.Add(left); g.Add(name); Grid.SetColumn(name, 1);
+        g.Add(left); g.Add(name); g.SetColumn(name, 1);
         return g;
     }
 
@@ -70,7 +70,7 @@ public sealed class EditorPage : ContentPage
         var save = new Button { Text = "Salvar", TextColor = BordattoColors.Gold, BackgroundColor = Colors.Transparent, FontAttributes = FontAttributes.Bold, FontSize = 12 };
         save.Clicked += (_, _) => _saveState.Text = "Salvo";
         var g = new Grid { Padding = new Thickness(22, 10), BackgroundColor = BordattoColors.Panel, ColumnDefinitions = { new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Auto) } };
-        g.Add(left); g.Add(save); Grid.SetColumn(save, 1);
+        g.Add(left); g.Add(save); g.SetColumn(save, 1);
         return g;
     }
 
@@ -93,7 +93,7 @@ public sealed class EditorPage : ContentPage
         };
         play.Clicked += async (_, _) =>
         {
-            var transformed = EmbroideryEngine.Transform(_design, _canvas.Scale, _canvas.RotationDegrees);
+            var transformed = EmbroideryEngine.Transform(_design, _canvas.DesignScale, _canvas.RotationDegrees);
             await Navigation.PushAsync(new SimulatorPage(transformed));
         };
         g.Add(play);
@@ -109,12 +109,12 @@ public sealed class EditorPage : ContentPage
             var stack = new VerticalStackLayout { Spacing = 1, HorizontalOptions = LayoutOptions.Center };
             stack.Add(LabelText(items[i].Item1, 24, BordattoColors.Cream, FontAttributes.Bold, TextAlignment.Center));
             stack.Add(LabelText(items[i].Item2, 10, BordattoColors.Muted, FontAttributes.None, TextAlignment.Center));
-            g.Add(stack); Grid.SetColumn(stack, i);
+            g.Add(stack); g.SetColumn(stack, i);
         }
         return g;
     }
 
-    private static void Add(Grid grid, View view, int row) { grid.Add(view); Grid.SetRow(view, row); }
+    private static void Add(Grid grid, View view, int row) { grid.Add(view); grid.SetRow(view, row); }
     private static Label LabelText(string text, double size, Color color, FontAttributes attrs = FontAttributes.None, TextAlignment alignment = TextAlignment.Start)
         => new() { Text = text, FontSize = size, TextColor = color, FontAttributes = attrs, HorizontalTextAlignment = alignment, VerticalTextAlignment = TextAlignment.Center };
 }
