@@ -14,9 +14,11 @@ public sealed class MainPage : ContentPage
     private readonly Button _studioButton;
     private readonly Label _modeHint;
     private readonly Entry _entry;
+    private readonly Button _generateButton;
     private string _activeTab = "Fonte";
+    private bool _generating;
 
-    public MainPage()
+    public MainPage(BordattoMode initialMode = BordattoMode.Tradicional)
     {
         NavigationPage.SetHasNavigationBar(this, false);
         BackgroundColor = BordattoColors.Background;
@@ -36,12 +38,24 @@ public sealed class MainPage : ContentPage
         };
         _entry.TextChanged += (_, e) =>
         {
-            _model.Text = string.IsNullOrWhiteSpace(e.NewTextValue) ? " " : e.NewTextValue[..Math.Min(28, e.NewTextValue.Length)];
+            var value = e.NewTextValue ?? "";
+            _model.Text = string.IsNullOrWhiteSpace(value) ? " " : value[..Math.Min(28, value.Length)];
             _canvas.InvalidateSurface();
         };
 
         _traditionalButton = Segment("TRADICIONAL", () => SetMode(BordattoMode.Tradicional));
         _studioButton = Segment("✦ STUDIO PRO", () => SetMode(BordattoMode.StudioPro));
+        _generateButton = new Button
+        {
+            Text = "▶  CONCLUIR E GERAR MATRIZ",
+            BackgroundColor = BordattoColors.Gold,
+            TextColor = Color.FromArgb("#17100C"),
+            FontAttributes = FontAttributes.Bold,
+            FontSize = 14,
+            HeightRequest = 62,
+            CornerRadius = 18
+        };
+        _generateButton.Clicked += async (_, _) => await GenerateAsync();
 
         var root = new Grid
         {
@@ -59,13 +73,14 @@ public sealed class MainPage : ContentPage
         var sheet = BuildBottomSheet(); root.Add(sheet); root.SetRow(sheet, 3);
         Content = root;
 
-        SetMode(BordattoMode.Tradicional);
+        SetMode(initialMode);
         ShowTab("Fonte");
     }
 
     private View BuildHeader()
     {
         var back = new Button { Text = "‹", FontSize = 35, TextColor = BordattoColors.Gold, BackgroundColor = Colors.Transparent, WidthRequest = 54, HeightRequest = 54, Padding = 0 };
+        back.Clicked += async (_, _) => await Navigation.PopAsync();
         var title = NewLabel("Novo bordado", 25, BordattoColors.Cream, FontAttributes.Bold);
         var sparkle = new Border
         {
@@ -101,6 +116,7 @@ public sealed class MainPage : ContentPage
         var titleRow = new Grid { ColumnDefinitions = { new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Auto) } };
         var textTitle = NewLabel("Texto", 18, BordattoColors.Cream, FontAttributes.Bold);
         var done = new Button { Text = "Concluir", TextColor = BordattoColors.Gold, BackgroundColor = Colors.Transparent, FontAttributes = FontAttributes.Bold, Padding = new Thickness(10, 0) };
+        done.Clicked += async (_, _) => await GenerateAsync();
         titleRow.Add(textTitle); titleRow.Add(done); titleRow.SetColumn(done, 1);
 
         var tabs = new Grid { ColumnSpacing = 5, ColumnDefinitions = { new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Star) } };
@@ -113,26 +129,13 @@ public sealed class MainPage : ContentPage
             tabs.Add(b); tabs.SetColumn(b, i);
         }
 
-        var generate = new Button
-        {
-            Text = "▶  CONCLUIR E GERAR MATRIZ",
-            BackgroundColor = BordattoColors.Gold,
-            TextColor = Color.FromArgb("#17100C"),
-            FontAttributes = FontAttributes.Bold,
-            FontSize = 14,
-            HeightRequest = 62,
-            CornerRadius = 18
-        };
-        generate.Clicked += async (_, _) => await GenerateAsync();
-        done.Clicked += async (_, _) => await GenerateAsync();
-
         var stack = new VerticalStackLayout { Spacing = 10, Padding = new Thickness(22, 14, 22, 20) };
         stack.Add(titleRow);
         stack.Add(_entry);
         stack.Add(tabs);
         stack.Add(_optionsHost);
         stack.Add(_modeHint);
-        stack.Add(generate);
+        stack.Add(_generateButton);
         return new Border { Stroke = Color.FromArgb("#4B2A1B"), StrokeThickness = 1, BackgroundColor = Color.FromArgb("#21120D"), Content = stack };
     }
 
@@ -144,7 +147,9 @@ public sealed class MainPage : ContentPage
         _traditionalButton.TextColor = mode == BordattoMode.Tradicional ? Color.FromArgb("#19100B") : BordattoColors.Cream;
         _studioButton.BackgroundColor = mode == BordattoMode.StudioPro ? BordattoColors.Gold : BordattoColors.PanelSoft;
         _studioButton.TextColor = mode == BordattoMode.StudioPro ? Color.FromArgb("#19100B") : BordattoColors.Cream;
-        _modeHint.Text = mode == BordattoMode.Tradicional ? "TRADICIONAL • simples, direto e funcional" : "STUDIO PRO • mesmo motor com controles técnicos avançados";
+        _modeHint.Text = mode == BordattoMode.Tradicional
+            ? "TRADICIONAL • simples, direto e funcional"
+            : "STUDIO PRO • mesmo motor Satin por eixo, com controles técnicos avançados";
         ShowTab(_activeTab);
     }
 
@@ -181,9 +186,9 @@ public sealed class MainPage : ContentPage
 
     private void BuildSizeOptions()
     {
-        var value = NewLabel($"{_model.HeightMm:0} mm", 22, BordattoColors.Gold, FontAttributes.Bold);
+        var value = NewLabel($"{_model.HeightMm:0.0} mm", 22, BordattoColors.Gold, FontAttributes.Bold);
         var slider = new Slider { Minimum = 5, Maximum = 40, Value = _model.HeightMm, MinimumTrackColor = BordattoColors.Gold, MaximumTrackColor = Color.FromArgb("#4B2A1B"), ThumbColor = BordattoColors.Gold };
-        slider.ValueChanged += (_, e) => { _model.HeightMm = (float)e.NewValue; value.Text = $"{_model.HeightMm:0} mm"; _canvas.InvalidateSurface(); };
+        slider.ValueChanged += (_, e) => { _model.HeightMm = (float)e.NewValue; value.Text = $"{_model.HeightMm:0.0} mm"; _canvas.InvalidateSurface(); };
         _optionsHost.Add(value); _optionsHost.Add(slider);
     }
 
@@ -214,9 +219,8 @@ public sealed class MainPage : ContentPage
 
     private void BuildProfessionalOptions()
     {
-        var title = NewLabel("Ajustes Studio Pro", 14, BordattoColors.Gold, FontAttributes.Bold);
-        _optionsHost.Add(title);
-        AddProSlider("Densidade Satin", .28, 1.0, _settings.DensityMm, "mm", v => _settings.DensityMm = (float)v);
+        _optionsHost.Add(NewLabel("Ajustes Studio Pro", 14, BordattoColors.Gold, FontAttributes.Bold));
+        AddProSlider("Densidade Satin", .12, .80, _settings.DensityMm, "mm", v => _settings.DensityMm = (float)v);
         AddProSlider("Compensação", 0, 1.0, _settings.PullCompensationMm, "mm", v => _settings.PullCompensationMm = (float)v);
         AddProSlider("Largura máxima Satin", 4, 14, _settings.SatinMaxWidthMm, "mm", v => _settings.SatinMaxWidthMm = (float)v);
     }
@@ -224,21 +228,33 @@ public sealed class MainPage : ContentPage
     private void AddProSlider(string title, double min, double max, double current, string suffix, Action<double> changed)
     {
         var label = NewLabel($"{title}: {current:0.00} {suffix}", 12, BordattoColors.Cream);
-        var slider = new Slider { Minimum = min, Maximum = max, Value = current, MinimumTrackColor = BordattoColors.Gold, ThumbColor = BordattoColors.Gold, MaximumTrackColor = Color.FromArgb("#4B2A1B") };
+        var slider = new Slider { Minimum = min, Maximum = max, Value = Math.Clamp(current, min, max), MinimumTrackColor = BordattoColors.Gold, ThumbColor = BordattoColors.Gold, MaximumTrackColor = Color.FromArgb("#4B2A1B") };
         slider.ValueChanged += (_, e) => { changed(e.NewValue); label.Text = $"{title}: {e.NewValue:0.00} {suffix}"; };
         _optionsHost.Add(label); _optionsHost.Add(slider);
     }
 
     private async Task GenerateAsync()
     {
+        if (_generating) return;
+        _generating = true;
+        var oldText = _generateButton.Text;
+        _generateButton.Text = "GERANDO MATRIZ…";
+        _generateButton.IsEnabled = false;
         try
         {
-            var design = EmbroideryEngine.Generate(_model, _settings, _mode);
+            var design = await Task.Run(() => EmbroideryEngine.Generate(_model, _settings, _mode));
+            ProjectStore.Remember(design, _mode);
             await Navigation.PushAsync(new EditorPage(design, _mode));
         }
         catch (Exception ex)
         {
             await DisplayAlertAsync("BORDATTO", ex.Message, "OK");
+        }
+        finally
+        {
+            _generating = false;
+            _generateButton.Text = oldText;
+            _generateButton.IsEnabled = true;
         }
     }
 
