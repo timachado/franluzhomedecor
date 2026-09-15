@@ -20,6 +20,7 @@ public sealed class SimulatorPage : ContentPage
     private double _speed = 1;
     private double _accumulator;
     private bool _playing;
+    private const double ReferencePpm = 640.0;
 
     public SimulatorPage(EmbroideryDesign design)
     {
@@ -38,7 +39,7 @@ public sealed class SimulatorPage : ContentPage
         _speedButtons = new[] { SpeedButton("1×", 1), SpeedButton("2×", 2), SpeedButton("4×", 4) };
 
         _timer = Dispatcher.CreateTimer();
-        _timer.Interval = TimeSpan.FromMilliseconds(80);
+        _timer.Interval = TimeSpan.FromMilliseconds(50);
         _timer.Tick += (_, _) => Tick();
 
         var root = new Grid { RowDefinitions = { new RowDefinition(GridLength.Auto), new RowDefinition(GridLength.Star), new RowDefinition(GridLength.Auto) } };
@@ -136,8 +137,7 @@ public sealed class SimulatorPage : ContentPage
     private void Tick()
     {
         if (!_playing) return;
-        const double referencePpm = 434.0;
-        _accumulator += referencePpm / 60.0 * 0.080 * _speed;
+        _accumulator += ReferencePpm / 60.0 * 0.050 * _speed;
         var add = (int)Math.Floor(_accumulator);
         if (add <= 0) return;
         _accumulator -= add;
@@ -174,7 +174,7 @@ public sealed class SimulatorPage : ContentPage
         var p = Math.Clamp(_current / (double)total, 0, 1);
         var donePts = _design.Stitches.Take(Math.Clamp(_current, 0, _design.Stitches.Count)).Count(s => s.Command == StitchCommand.Stitch);
         var remainingPts = Math.Max(0, _design.StitchCount - donePts);
-        var secs = (int)Math.Ceiling(remainingPts / (434.0 * _speed) * 60.0);
+        var secs = (int)Math.Ceiling(remainingPts / (ReferencePpm * _speed) * 60.0);
         _canvas.Current = _current; _canvas.InvalidateSurface();
         _percent.Text = $"{p * 100:0.0}%".Replace('.', ',');
         _points.Text = $"{donePts:N0} / {_design.StitchCount:N0} pts";
