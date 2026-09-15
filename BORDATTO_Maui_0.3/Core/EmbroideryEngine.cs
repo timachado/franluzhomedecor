@@ -4,8 +4,20 @@ namespace BordattoStudio.Core;
 
 public static class EmbroideryEngine
 {
-    private sealed record Band(int Top, int Bottom);
-    private sealed record ColumnBand(int X, IReadOnlyList<Band> Bands);
+    private sealed record RowRun(int Y, int Left, int Right)
+    {
+        public float Center => (Left + Right) * .5f;
+        public int Width => Right - Left + 1;
+    }
+
+    private sealed class SatinTrack
+    {
+        public List<RowRun> Runs { get; } = [];
+        public float LastCenter => Runs.Count == 0 ? 0 : Runs[^1].Center;
+        public int LastY => Runs.Count == 0 ? int.MinValue : Runs[^1].Y;
+        public float MinCenter => Runs.Count == 0 ? 0 : Runs.Min(r => r.Center);
+        public float AverageCenter => Runs.Count == 0 ? 0 : Runs.Average(r => r.Center);
+    }
 
     public static EmbroideryDesign Generate(TextObjectModel model, EngineSettings settings, BordattoMode mode)
     {
@@ -21,7 +33,9 @@ public static class EmbroideryEngine
         using var font = new SKFont(typeface, textPx);
         using var paint = new SKPaint { Color = SKColors.White, IsAntialias = true, Style = SKPaintStyle.Fill };
 
-        var densityPx = Math.Max(2, (int)MathF.Round(Math.Clamp(settings.DensityMm, .25f, 1.2f) * pxPerMm));
+        // A referência trabalha com uma sequência Satin muito mais densa e orientada ao traço.
+        // Em 6 px/mm, 1 px equivale a ~0,167 mm.
+        var densityPx = Math.Max(1, (int)MathF.Round(Math.Clamp(settings.DensityMm, .15f, .90f) * pxPerMm));
         var pullPx = Math.Clamp(settings.PullCompensationMm, 0f, 1.5f) * pxPerMm;
         var spacingPx = textPx * .045f;
         var cursorPx = 0f;
@@ -30,11 +44,11 @@ public static class EmbroideryEngine
         void AddPx(float x, float y, StitchCommand command)
             => raw.Add(new StitchPoint(x / pxPerMm, y / pxPerMm, command, model.Color));
 
-        void StartTrack(float x, float y)
-        {
-            AddPx(x, y, StitchCommand.Jump);
-            AddPx(x, y, StitchCommand.Stitch);
-        }
+        void JumpTo(float x, float y)
+            => AddPx(x, y, StitchCommand.Jump);
+
+        void StitchTo(float x, float y)
+            => AddPx(x, y, StitchCommand.Stitch);
 
         foreach (var ch in clean)
         {
@@ -58,117 +72,75 @@ public static class EmbroideryEngine
                 canvas.Flush();
             }
 
-            var columns = new List<ColumnBand>();
-            for (var x = 0; x < bitmapW; x += densityPx)
+            // Em vez de varrer colunas inteiras (que fazia o M virar linhas verticais enormes),
+            // seguimos as faixas horizontais do glifo e encadeamos essas faixas em trilhas locais.
+            // Para um traço vertical isso gera Satin horizontal, exatamente como se vê no vídeo.
+            var tracks = BuildStrokeTracks(bitmap, densityPx);
+            var useful = tracks
+                .Where(t => t.Runs.Count >= Math.Max(4, (int)MathF.Round(pxPerMm * .8f / densityPx)))
+                .OrderBy(t => t.MinCenter)
+                .ThenBy(t => t.Runs[0].Y)
+                .ToList();
+
+            foreach (var track in useful)
             {
-                var bands = new List<Band>();
-                var y = 0;
-                while (y < bitmapH)
+                var runs = track.Runs;
+                if (runs.Count < 2) continue;
+
+                // 1) Underlay local do MESMO traço. Não percorre a palavra inteira antes do Satin.
+                if (settings.CenterUnderlay)
                 {
-                    if (bitmap.GetPixel(x, y).Alpha > 24)
+                    var underlayStride = Math.Max(2, (int)MathF.Round((1.35f * pxPerMm) / densityPx));
+                    var first = runs[0];
+                    JumpTo(cursorPx + first.Center, first.Y);
+                    StitchTo(cursorPx + first.Center, first.Y);
+                    for (var i = underlayStride; i < runs.Count; i += underlayStride)
                     {
-                        var top = y;
-                        var bottom = y;
-                        y++;
-                        while (y < bitmapH && bitmap.GetPixel(x, y).Alpha > 24)
-                        {
-                            bottom = y;
-                            y++;
-                        }
-                        if (bottom - top >= 1) bands.Add(new Band(top, bottom));
+                        var r = runs[i];
+                        StitchTo(cursorPx + r.Center, r.Y);
                     }
-                    y++;
+                    var last = runs[^1];
+                    StitchTo(cursorPx + last.Center, last.Y);
                 }
-                if (bands.Count > 0) columns.Add(new ColumnBand(x, bands));
-            }
 
-            if (columns.Count > 1)
-            {
-                var maxTracks = columns.Max(c => c.Bands.Count);
-                for (var track = 0; track < maxTracks; track++)
+                if (settings.EdgeUnderlay)
                 {
-                    var segment = new List<(int X, Band Band)>();
-
-                    void FlushSegment()
+                    var edgeStride = Math.Max(2, (int)MathF.Round((1.0f * pxPerMm) / densityPx));
+                    var first = runs[0];
+                    JumpTo(cursorPx + first.Left + first.Width * .26f, first.Y);
+                    StitchTo(cursorPx + first.Left + first.Width * .26f, first.Y);
+                    for (var i = edgeStride; i < runs.Count; i += edgeStride)
                     {
-                        if (segment.Count < 2)
-                        {
-                            segment.Clear();
-                            return;
-                        }
-
-                        if (settings.CenterUnderlay)
-                        {
-                            var stride = Math.Max(1, (int)MathF.Round(1.8f / Math.Max(settings.DensityMm, .25f)));
-                            var first = true;
-                            for (var i = 0; i < segment.Count; i += stride)
-                            {
-                                var item = segment[i];
-                                var cx = cursorPx + item.X;
-                                var cy = (item.Band.Top + item.Band.Bottom) * .5f;
-                                if (first) { StartTrack(cx, cy); first = false; }
-                                else AddPx(cx, cy, StitchCommand.Stitch);
-                            }
-                            var lastItem = segment[^1];
-                            AddPx(cursorPx + lastItem.X, (lastItem.Band.Top + lastItem.Band.Bottom) * .5f, StitchCommand.Stitch);
-                        }
-
-                        if (settings.EdgeUnderlay)
-                        {
-                            var first = true;
-                            foreach (var item in segment)
-                            {
-                                var x = cursorPx + item.X;
-                                var y = item.Band.Top + (item.Band.Bottom - item.Band.Top) * .22f;
-                                if (first) { StartTrack(x, y); first = false; }
-                                else AddPx(x, y, StitchCommand.Stitch);
-                            }
-                        }
-
-                        var parity = false;
-                        var satinStarted = false;
-                        for (var i = segment.Count - 1; i >= 0; i--)
-                        {
-                            var item = segment[i];
-                            var widthMm = (item.Band.Bottom - item.Band.Top) / pxPerMm;
-                            var limitMm = Math.Max(3f, settings.SatinMaxWidthMm);
-                            var halfExtra = widthMm > limitMm ? 0f : pullPx;
-                            var y = parity ? item.Band.Top - halfExtra : item.Band.Bottom + halfExtra;
-                            var x = cursorPx + item.X;
-                            if (!satinStarted)
-                            {
-                                if (!settings.CenterUnderlay && !settings.EdgeUnderlay) StartTrack(x, y);
-                                else AddPx(x, y, StitchCommand.Stitch);
-                                satinStarted = true;
-                            }
-                            else AddPx(x, y, StitchCommand.Stitch);
-                            parity = !parity;
-                        }
-
-                        var end = raw.LastOrDefault(p => p.Command == StitchCommand.Stitch);
-                        if (end.Command == StitchCommand.Stitch)
-                        {
-                            raw.Add(new StitchPoint(end.X + .20f, end.Y, StitchCommand.Stitch, model.Color));
-                            raw.Add(new StitchPoint(end.X, end.Y + .20f, StitchCommand.Stitch, model.Color));
-                            raw.Add(new StitchPoint(end.X, end.Y, StitchCommand.Stitch, model.Color));
-                        }
-                        segment.Clear();
+                        var r = runs[i];
+                        StitchTo(cursorPx + r.Left + r.Width * .26f, r.Y);
                     }
+                }
 
-                    var lastX = int.MinValue;
-                    foreach (var col in columns)
-                    {
-                        var band = track < col.Bands.Count ? col.Bands[track] : null;
-                        if (band is null || (lastX != int.MinValue && col.X - lastX > densityPx * 2))
-                        {
-                            FlushSegment();
-                            lastX = int.MinValue;
-                            if (band is null) continue;
-                        }
-                        segment.Add((col.X, band));
-                        lastX = col.X;
-                    }
-                    FlushSegment();
+                // 2) Volta somente ao início desta trilha e borda o Satin imediatamente.
+                // Cada passo troca de lado, fazendo a agulha preencher o traço local antes de seguir adiante.
+                var firstRun = runs[0];
+                var firstLeft = firstRun.Left - pullPx * .5f;
+                JumpTo(cursorPx + firstLeft, firstRun.Y);
+                StitchTo(cursorPx + firstLeft, firstRun.Y);
+
+                var rightSide = true;
+                for (var i = 1; i < runs.Count; i++)
+                {
+                    var r = runs[i];
+                    var satinWidthMm = r.Width / pxPerMm;
+                    var compensation = satinWidthMm <= Math.Max(3f, settings.SatinMaxWidthMm) ? pullPx * .5f : 0f;
+                    var x = rightSide ? r.Right + compensation : r.Left - compensation;
+                    StitchTo(cursorPx + x, r.Y);
+                    rightSide = !rightSide;
+                }
+
+                // Pequeno tie-out local, sem criar linha atravessando outra letra.
+                var end = raw.LastOrDefault(p => p.Command == StitchCommand.Stitch);
+                if (end.Command == StitchCommand.Stitch)
+                {
+                    raw.Add(new StitchPoint(end.X + .18f, end.Y, StitchCommand.Stitch, model.Color));
+                    raw.Add(new StitchPoint(end.X, end.Y + .18f, StitchCommand.Stitch, model.Color));
+                    raw.Add(new StitchPoint(end.X, end.Y, StitchCommand.Stitch, model.Color));
                 }
             }
 
@@ -191,8 +163,8 @@ public static class EmbroideryEngine
             var dx = p.X - centerX; var dy = p.Y - centerY;
             rotated.Add(p with { X = centerX + dx * cos - dy * sin, Y = centerY + dx * sin + dy * cos });
         }
-        var last = rotated.Last(p => p.Command == StitchCommand.Stitch);
-        rotated.Add(new StitchPoint(last.X, last.Y, StitchCommand.End, model.Color));
+        var lastStitch = rotated.Last(p => p.Command == StitchCommand.Stitch);
+        rotated.Add(new StitchPoint(lastStitch.X, lastStitch.Y, StitchCommand.End, model.Color));
 
         var finalPts = rotated.Where(p => p.Command is StitchCommand.Stitch or StitchCommand.Jump).ToList();
         var fMinX = finalPts.Min(p => p.X); var fMaxX = finalPts.Max(p => p.X);
@@ -209,6 +181,78 @@ public static class EmbroideryEngine
             ThreadBrand = "Brother",
             ThreadCode = model.Color == 0xFF000000 ? "900" : "086"
         };
+    }
+
+    private static List<SatinTrack> BuildStrokeTracks(SKBitmap bitmap, int stepY)
+    {
+        var tracks = new List<SatinTrack>();
+        var active = new List<int>();
+        var maxCenterGap = Math.Max(7f, stepY * 5.5f);
+
+        for (var y = 0; y < bitmap.Height; y += stepY)
+        {
+            var runs = new List<RowRun>();
+            var x = 0;
+            while (x < bitmap.Width)
+            {
+                while (x < bitmap.Width && bitmap.GetPixel(x, y).Alpha <= 24) x++;
+                if (x >= bitmap.Width) break;
+                var left = x;
+                while (x < bitmap.Width && bitmap.GetPixel(x, y).Alpha > 24) x++;
+                var right = x - 1;
+                if (right - left >= 1) runs.Add(new RowRun(y, left, right));
+            }
+
+            if (runs.Count == 0)
+            {
+                active.Clear();
+                continue;
+            }
+
+            var nextActive = new List<int>();
+            var used = new HashSet<int>();
+
+            foreach (var run in runs)
+            {
+                var bestTrack = -1;
+                var bestScore = float.MaxValue;
+                foreach (var ti in active)
+                {
+                    if (used.Contains(ti)) continue;
+                    var t = tracks[ti];
+                    if (y - t.LastY > stepY * 2) continue;
+                    var prev = t.Runs[^1];
+                    var overlaps = run.Left <= prev.Right + 2 && run.Right >= prev.Left - 2;
+                    var gap = MathF.Abs(run.Center - prev.Center);
+                    if (!overlaps && gap > maxCenterGap) continue;
+                    var score = gap + (overlaps ? 0 : maxCenterGap * .45f);
+                    if (score < bestScore)
+                    {
+                        bestScore = score;
+                        bestTrack = ti;
+                    }
+                }
+
+                if (bestTrack < 0)
+                {
+                    var t = new SatinTrack();
+                    t.Runs.Add(run);
+                    tracks.Add(t);
+                    bestTrack = tracks.Count - 1;
+                }
+                else
+                {
+                    tracks[bestTrack].Runs.Add(run);
+                }
+
+                used.Add(bestTrack);
+                nextActive.Add(bestTrack);
+            }
+
+            active = nextActive;
+        }
+
+        return tracks;
     }
 
     public static EmbroideryDesign Transform(EmbroideryDesign design, float scale, float rotationDegrees)
