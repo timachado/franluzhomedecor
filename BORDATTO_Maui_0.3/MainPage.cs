@@ -53,10 +53,10 @@ public sealed class MainPage : ContentPage
                 new RowDefinition(GridLength.Auto)
             }
         };
-        root.Add(BuildHeader()); Grid.SetRow(root.Children[^1], 0);
-        root.Add(BuildModeSwitcher()); Grid.SetRow(root.Children[^1], 1);
-        root.Add(_canvas); Grid.SetRow(_canvas, 2);
-        root.Add(BuildBottomSheet()); Grid.SetRow(root.Children[^1], 3);
+        var header = BuildHeader(); root.Add(header); root.SetRow(header, 0);
+        var switcher = BuildModeSwitcher(); root.Add(switcher); root.SetRow(switcher, 1);
+        root.Add(_canvas); root.SetRow(_canvas, 2);
+        var sheet = BuildBottomSheet(); root.Add(sheet); root.SetRow(sheet, 3);
         Content = root;
 
         SetMode(BordattoMode.Tradicional);
@@ -77,9 +77,9 @@ public sealed class MainPage : ContentPage
             Content = NewLabel("✦", 24, BordattoColors.Gold, FontAttributes.Bold, TextAlignment.Center)
         };
         var grid = new Grid { Padding = new Thickness(14, 10, 14, 6), ColumnDefinitions = { new ColumnDefinition(GridLength.Auto), new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Auto) } };
-        grid.Add(back); Grid.SetColumn(back, 0);
-        grid.Add(title); Grid.SetColumn(title, 1); title.VerticalTextAlignment = TextAlignment.Center;
-        grid.Add(sparkle); Grid.SetColumn(sparkle, 2);
+        grid.Add(back); grid.SetColumn(back, 0);
+        grid.Add(title); grid.SetColumn(title, 1); title.VerticalTextAlignment = TextAlignment.Center;
+        grid.Add(sparkle); grid.SetColumn(sparkle, 2);
         return grid;
     }
 
@@ -91,8 +91,8 @@ public sealed class MainPage : ContentPage
             ColumnSpacing = 8,
             ColumnDefinitions = { new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Star) }
         };
-        grid.Add(_traditionalButton); Grid.SetColumn(_traditionalButton, 0);
-        grid.Add(_studioButton); Grid.SetColumn(_studioButton, 1);
+        grid.Add(_traditionalButton); grid.SetColumn(_traditionalButton, 0);
+        grid.Add(_studioButton); grid.SetColumn(_studioButton, 1);
         return grid;
     }
 
@@ -101,7 +101,7 @@ public sealed class MainPage : ContentPage
         var titleRow = new Grid { ColumnDefinitions = { new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Auto) } };
         var textTitle = NewLabel("Texto", 18, BordattoColors.Cream, FontAttributes.Bold);
         var done = new Button { Text = "Concluir", TextColor = BordattoColors.Gold, BackgroundColor = Colors.Transparent, FontAttributes = FontAttributes.Bold, Padding = new Thickness(10, 0) };
-        titleRow.Add(textTitle); titleRow.Add(done); Grid.SetColumn(done, 1);
+        titleRow.Add(textTitle); titleRow.Add(done); titleRow.SetColumn(done, 1);
 
         var tabs = new Grid { ColumnSpacing = 5, ColumnDefinitions = { new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Star) } };
         var names = new[] { "Fonte", "Tamanho", "Cor", "Estilo" };
@@ -110,7 +110,7 @@ public sealed class MainPage : ContentPage
             var n = names[i];
             var b = new Button { Text = n, FontSize = 12, HeightRequest = 48, CornerRadius = 15, BackgroundColor = Color.FromArgb("#351D13"), TextColor = BordattoColors.Cream };
             b.Clicked += (_, _) => ShowTab(n);
-            tabs.Add(b); Grid.SetColumn(b, i);
+            tabs.Add(b); tabs.SetColumn(b, i);
         }
 
         var generate = new Button
@@ -174,7 +174,7 @@ public sealed class MainPage : ContentPage
             var f = fonts[i];
             var b = new Button { Text = $"Aa\n{f.Label}", FontSize = 15, HeightRequest = 76, CornerRadius = 15, BackgroundColor = BordattoColors.PanelSoft, TextColor = BordattoColors.Cream };
             b.Clicked += (_, _) => { _model.FontFamily = f.Family; _model.Bold = f.Bold; _model.Italic = f.Italic; _canvas.InvalidateSurface(); };
-            grid.Add(b); Grid.SetColumn(b, i);
+            grid.Add(b); grid.SetColumn(b, i);
         }
         _optionsHost.Add(grid);
     }
@@ -196,7 +196,7 @@ public sealed class MainPage : ContentPage
             var argb = colors[i];
             var b = new Button { Text = "●", FontSize = 30, HeightRequest = 58, CornerRadius = 15, BackgroundColor = BordattoColors.PanelSoft, TextColor = Color.FromArgb($"#{argb:X8}") };
             b.Clicked += (_, _) => { _model.Color = argb; _canvas.InvalidateSurface(); };
-            grid.Add(b); Grid.SetColumn(b, i);
+            grid.Add(b); grid.SetColumn(b, i);
         }
         _optionsHost.Add(grid);
     }
@@ -207,7 +207,7 @@ public sealed class MainPage : ContentPage
         var bold = Segment("Negrito", () => { _model.Bold = !_model.Bold; _canvas.InvalidateSurface(); });
         var italic = Segment("Itálico", () => { _model.Italic = !_model.Italic; _canvas.InvalidateSurface(); });
         var reset = Segment("↻ 0°", () => { _model.RotationDegrees = 0; _model.Scale = 1; _canvas.InvalidateSurface(); });
-        row.Add(bold); row.Add(italic); row.Add(reset); Grid.SetColumn(italic, 1); Grid.SetColumn(reset, 2);
+        row.Add(bold); row.Add(italic); row.Add(reset); row.SetColumn(italic, 1); row.SetColumn(reset, 2);
         _optionsHost.Add(row);
         _optionsHost.Add(NewLabel("No bastidor: arraste o nome; use a alça ↻ para girar e a alça diagonal para redimensionar. Com dois dedos, mova + gire + dê zoom ao mesmo tempo.", 12, BordattoColors.Muted));
     }
@@ -238,7 +238,7 @@ public sealed class MainPage : ContentPage
         }
         catch (Exception ex)
         {
-            await DisplayAlert("BORDATTO", ex.Message, "OK");
+            await DisplayAlertAsync("BORDATTO", ex.Message, "OK");
         }
     }
 
