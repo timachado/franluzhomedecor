@@ -36,17 +36,26 @@ public sealed class TextObjectModel
 
 public sealed class EngineSettings
 {
-    public float DensityMm { get; set; } = 0.42f;
+    public float DensityMm { get; set; } = 0.18f;
     public float PullCompensationMm { get; set; } = 0.25f;
     public float SatinMaxWidthMm { get; set; } = 9f;
     public bool CenterUnderlay { get; set; } = true;
     public bool EdgeUnderlay { get; set; }
     public float StitchLengthMm { get; set; } = 2.2f;
 
-    public static EngineSettings TraditionalPreset() => new();
+    public static EngineSettings TraditionalPreset() => new()
+    {
+        DensityMm = 0.18f,
+        PullCompensationMm = 0.25f,
+        SatinMaxWidthMm = 9f,
+        CenterUnderlay = true,
+        EdgeUnderlay = false,
+        StitchLengthMm = 2.2f
+    };
+
     public static EngineSettings StudioPreset() => new()
     {
-        DensityMm = 0.40f,
+        DensityMm = 0.18f,
         PullCompensationMm = 0.30f,
         SatinMaxWidthMm = 10f,
         CenterUnderlay = true,
