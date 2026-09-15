@@ -5,9 +5,9 @@ using SkiaSharp.Views.Maui.Controls;
 
 namespace BordattoStudio.Views;
 
-// 0.3.6: interação do texto no bastidor seguindo a referência:
-// arraste direto, rotação pela alça inferior central, escala pela alça inferior direita
-// e gesto de dois dedos para mover + girar + escalar. O objeto inteiro fica contido no bastidor.
+// 0.3.6: interação direta do texto no bastidor inspirada na referência.
+// Arraste direto, rotação pela alça inferior central, escala pela alça inferior direita
+// e gesto de dois dedos para mover + girar + escalar. O objeto inteiro permanece no bastidor.
 public sealed class InteractiveTextCanvas036 : SKCanvasView
 {
     private enum GestureMode { None, Drag, Rotate, Resize, Multi }
@@ -37,21 +37,22 @@ public sealed class InteractiveTextCanvas036 : SKCanvasView
     private void OnPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
     {
         var canvas = e.Surface.Canvas;
-        var w = e.Info.Width;
-        var h = e.Info.Height;
+        var w = (float)e.Info.Width;
+        var h = (float)e.Info.Height;
         canvas.Clear(new SKColor(0xF3, 0xEC, 0xDD));
 
-        // Bastidor 100 × 100 realmente quadrado. A 0.3.4 usava toda a altura disponível,
-        // então quando o painel inferior crescia o bastidor virava uma faixa estreita.
-        var outerPad = Math.Max(24f, w * .045f);
-        var captionGap = Math.Max(28f, w * .045f);
-        var usableW = Math.Max(80f, w - outerPad * 2f);
-        var usableH = Math.Max(80f, h - outerPad * 2f - captionGap);
-        var side = Math.Max(80f, Math.Min(usableW, usableH));
+        // Reserva espaço real para a legenda e para a alça de rotação. Assim o bastidor
+        // continua quadrado e as alças não são cortadas pela borda inferior do canvas.
+        var outerPad = Math.Max(28f, w * .045f);
+        var captionGap = Math.Max(30f, w * .042f);
+        var handleReserve = Math.Clamp(w * .065f, 48f, 72f);
+        var maxSideW = Math.Max(80f, w - outerPad * 2f);
+        var maxSideH = Math.Max(80f, h - outerPad * 2f - captionGap - handleReserve);
+        var side = Math.Max(80f, Math.Min(maxSideW, maxSideH));
         var left = (w - side) * .5f;
-        var top = Math.Max(outerPad + captionGap, (h - side) * .5f + captionGap * .25f);
-        if (top + side > h - outerPad)
-            top = Math.Max(outerPad + captionGap, h - outerPad - side);
+        var top = outerPad + captionGap;
+        if (top + side + handleReserve > h - outerPad)
+            top = Math.Max(captionGap + 8f, h - outerPad - handleReserve - side);
         _hoopRect = new SKRect(left, top, left + side, top + side);
 
         DrawGrid(canvas);
@@ -62,7 +63,7 @@ public sealed class InteractiveTextCanvas036 : SKCanvasView
             StrokeWidth = Math.Max(2.5f, w * .004f),
             Style = SKPaintStyle.Stroke,
             IsAntialias = true,
-            PathEffect = SKPathEffect.CreateDash([12f, 9f], 0)
+            PathEffect = SKPathEffect.CreateDash(new float[] { 12f, 9f }, 0)
         };
         canvas.DrawRoundRect(_hoopRect, 22, 22, hoopPaint);
 
@@ -70,13 +71,10 @@ public sealed class InteractiveTextCanvas036 : SKCanvasView
         using var captionPaint = new SKPaint { Color = new SKColor(0x76, 0x70, 0x65), IsAntialias = true };
         canvas.DrawText("Bastidor 100 × 100 mm", _hoopRect.MidX, _hoopRect.Top - 12f, SKTextAlign.Center, captionFont, captionPaint);
 
-        var pxPerMm = _hoopRect.Width / 100f;
-        var textSize = Math.Clamp(Model.HeightMm * pxPerMm * Model.Scale, 18f, _hoopRect.Height * .72f);
         var style = Model.Bold && Model.Italic
             ? SKFontStyle.BoldItalic
             : Model.Bold ? SKFontStyle.Bold : Model.Italic ? SKFontStyle.Italic : SKFontStyle.Normal;
         using var typeface = SKTypeface.FromFamilyName(Model.FontFamily, style) ?? SKTypeface.Default;
-        using var textFont = new SKFont(typeface, textSize);
         using var textPaint = new SKPaint
         {
             Color = EmbroideryEngine.ToSkColor(Model.Color),
@@ -85,30 +83,65 @@ public sealed class InteractiveTextCanvas036 : SKCanvasView
         };
 
         var text = string.IsNullOrWhiteSpace(Model.Text) ? "Seu texto" : Model.Text;
+        var pxPerMm = _hoopRect.Width / 100f;
+        var textSize = Math.Clamp(Model.HeightMm * pxPerMm * Model.Scale, 8f, _hoopRect.Height * .72f);
+        var textFont = new SKFont(typeface, textSize);
         textFont.MeasureText(text, out var bounds, textPaint);
-        var margin = Math.Max(10f, textSize * .12f);
-        _selectionLocal = new SKRect(
-            bounds.Left - bounds.MidX - margin,
-            bounds.Top - bounds.MidY - margin,
-            bounds.Right - bounds.MidX + margin,
-            bounds.Bottom - bounds.MidY + margin);
+        _selectionLocal = BuildSelection(bounds, textSize);
+
+        // Se uma alteração de fonte/tamanho fizer a caixa ultrapassar o bastidor,
+        // reduzimos a escala mantendo a proporção. Isso evita o caso em que só o centro
+        // fica dentro, mas as extremidades do nome somem para fora do bastidor.
+        var fit = GetFitFactor(_selectionLocal, Model.RotationDegrees);
+        if (fit < .995f && Model.Scale > .12f)
+        {
+            Model.Scale = Math.Max(.12f, Model.Scale * fit * .985f);
+            textFont.Dispose();
+            textSize = Math.Clamp(Model.HeightMm * pxPerMm * Model.Scale, 8f, _hoopRect.Height * .72f);
+            textFont = new SKFont(typeface, textSize);
+            textFont.MeasureText(text, out bounds, textPaint);
+            _selectionLocal = BuildSelection(bounds, textSize);
+        }
 
         _screenCenter = new SKPoint(
             _hoopRect.Left + Math.Clamp(Model.CenterX, 0f, 1f) * _hoopRect.Width,
             _hoopRect.Top + Math.Clamp(Model.CenterY, 0f, 1f) * _hoopRect.Height);
-
         ConstrainCenterToHoop(updateModel: true);
 
         canvas.Save();
         canvas.Translate(_screenCenter.X, _screenCenter.Y);
         canvas.RotateDegrees(Model.RotationDegrees);
         canvas.DrawText(text, -bounds.MidX, -bounds.MidY, SKTextAlign.Left, textFont, textPaint);
-
         if (Selected)
             DrawSelection(canvas, textSize);
-
         canvas.Restore();
+
+        textFont.Dispose();
         _hasGeometry = true;
+    }
+
+    private static SKRect BuildSelection(SKRect bounds, float textSize)
+    {
+        var margin = Math.Max(10f, textSize * .12f);
+        return new SKRect(
+            bounds.Left - bounds.MidX - margin,
+            bounds.Top - bounds.MidY - margin,
+            bounds.Right - bounds.MidX + margin,
+            bounds.Bottom - bounds.MidY + margin);
+    }
+
+    private float GetFitFactor(SKRect localRect, float rotationDegrees)
+    {
+        if (_hoopRect.Width <= 1 || localRect.Width <= 1) return 1f;
+        var r = rotationDegrees * MathF.PI / 180f;
+        var c = MathF.Abs(MathF.Cos(r));
+        var s = MathF.Abs(MathF.Sin(r));
+        var rotatedWidth = localRect.Width * c + localRect.Height * s;
+        var rotatedHeight = localRect.Width * s + localRect.Height * c;
+        var innerPad = Math.Max(8f, _hoopRect.Width * .015f);
+        var availableW = Math.Max(1f, _hoopRect.Width - innerPad * 2f);
+        var availableH = Math.Max(1f, _hoopRect.Height - innerPad * 2f);
+        return Math.Min(1f, Math.Min(availableW / Math.Max(1f, rotatedWidth), availableH / Math.Max(1f, rotatedHeight)));
     }
 
     private void DrawGrid(SKCanvas canvas)
@@ -150,7 +183,7 @@ public sealed class InteractiveTextCanvas036 : SKCanvasView
         canvas.DrawRoundRect(_selectionLocal, 8, 8, boxPaint);
 
         var handleRadius = Math.Clamp(textSize * .18f, 17f, 24f);
-        var stem = Math.Clamp(textSize * .48f, 42f, 68f);
+        var stem = Math.Clamp(textSize * .40f, 34f, 54f);
         var rotateLocal = new SKPoint(_selectionLocal.MidX, _selectionLocal.Bottom + stem);
         var resizeLocal = new SKPoint(_selectionLocal.Right, _selectionLocal.Bottom);
         canvas.DrawLine(_selectionLocal.MidX, _selectionLocal.Bottom, rotateLocal.X, rotateLocal.Y - handleRadius * .75f, boxPaint);
@@ -201,15 +234,13 @@ public sealed class InteractiveTextCanvas036 : SKCanvasView
                     _gesture = GestureMode.Multi;
                     Selected = true;
                 }
-                else if (_hasGeometry && Distance(p, _rotateHandle) <= 44f)
+                else if (Selected && _hasGeometry && Distance(p, _rotateHandle) <= 46f)
                 {
                     _gesture = GestureMode.Rotate;
-                    Selected = true;
                 }
-                else if (_hasGeometry && Distance(p, _resizeHandle) <= 44f)
+                else if (Selected && _hasGeometry && Distance(p, _resizeHandle) <= 46f)
                 {
                     _gesture = GestureMode.Resize;
-                    Selected = true;
                 }
                 else if (_hasGeometry && HitTextBox(p))
                 {
@@ -240,8 +271,8 @@ public sealed class InteractiveTextCanvas036 : SKCanvasView
                     var oldVec = new SKPoint(b0.X - a0.X, b0.Y - a0.Y);
                     var newVec = new SKPoint(b1.X - a1.X, b1.Y - a1.Y);
 
-                    var ratio = Math.Max(.75f, Math.Min(1.35f, Math.Max(1f, Length(newVec)) / Math.Max(1f, Length(oldVec))));
-                    Model.Scale = Math.Clamp(Model.Scale * ratio, .25f, 4f);
+                    var ratio = Math.Clamp(Math.Max(1f, Length(newVec)) / Math.Max(1f, Length(oldVec)), .72f, 1.38f);
+                    Model.Scale = Math.Clamp(Model.Scale * ratio, .12f, 4f);
                     Model.RotationDegrees = Normalize(Model.RotationDegrees + Angle(newVec) - Angle(oldVec));
                     MoveCenterBy(newMid.X - oldMid.X, newMid.Y - oldMid.Y);
                     ConstrainCenterToHoop(updateModel: true);
@@ -261,8 +292,11 @@ public sealed class InteractiveTextCanvas036 : SKCanvasView
                     }
                     else if (_gesture == GestureMode.Rotate)
                     {
+                        // A alça parte de baixo do objeto (vetor de +90° na tela). Para que
+                        // essa posição represente rotação 0°, o offset correto é -90°.
+                        // O +90° anterior causava um salto de quase 180° ao iniciar o gesto.
                         Model.RotationDegrees = Normalize(
-                            Angle(new SKPoint(p.X - _screenCenter.X, p.Y - _screenCenter.Y)) + 90f);
+                            Angle(new SKPoint(p.X - _screenCenter.X, p.Y - _screenCenter.Y)) - 90f);
                         ConstrainCenterToHoop(updateModel: true);
                         RaiseChanged();
                     }
@@ -271,7 +305,7 @@ public sealed class InteractiveTextCanvas036 : SKCanvasView
                         var oldDistance = Math.Max(1f, Distance(prev, _screenCenter));
                         var newDistance = Math.Max(1f, Distance(p, _screenCenter));
                         var ratio = Math.Clamp(newDistance / oldDistance, .78f, 1.28f);
-                        Model.Scale = Math.Clamp(Model.Scale * ratio, .25f, 4f);
+                        Model.Scale = Math.Clamp(Model.Scale * ratio, .12f, 4f);
                         RaiseChanged();
                     }
                     _previousTouches[e.Id] = p;
@@ -294,7 +328,7 @@ public sealed class InteractiveTextCanvas036 : SKCanvasView
     {
         var local = WorldToLocal(world);
         var hit = _selectionLocal;
-        hit.Inflate(14f, 14f);
+        hit.Inflate(16f, 16f);
         return hit.Contains(local.X, local.Y);
     }
 
@@ -321,7 +355,7 @@ public sealed class InteractiveTextCanvas036 : SKCanvasView
         var maxX = corners.Max(c => c.X);
         var minY = corners.Min(c => c.Y);
         var maxY = corners.Max(c => c.Y);
-        var innerPad = Math.Max(6f, _hoopRect.Width * .012f);
+        var innerPad = Math.Max(8f, _hoopRect.Width * .015f);
         var left = _hoopRect.Left + innerPad;
         var right = _hoopRect.Right - innerPad;
         var top = _hoopRect.Top + innerPad;
@@ -329,10 +363,21 @@ public sealed class InteractiveTextCanvas036 : SKCanvasView
 
         var dx = 0f;
         var dy = 0f;
-        if (minX < left) dx = left - minX;
-        else if (maxX > right) dx = right - maxX;
-        if (minY < top) dy = top - minY;
-        else if (maxY > bottom) dy = bottom - maxY;
+        var boxWidth = maxX - minX;
+        var boxHeight = maxY - minY;
+        if (boxWidth > right - left)
+            dx = _hoopRect.MidX - (minX + maxX) * .5f;
+        else if (minX < left)
+            dx = left - minX;
+        else if (maxX > right)
+            dx = right - maxX;
+
+        if (boxHeight > bottom - top)
+            dy = _hoopRect.MidY - (minY + maxY) * .5f;
+        else if (minY < top)
+            dy = top - minY;
+        else if (maxY > bottom)
+            dy = bottom - maxY;
 
         if (MathF.Abs(dx) > .01f || MathF.Abs(dy) > .01f)
             _screenCenter = new SKPoint(_screenCenter.X + dx, _screenCenter.Y + dy);
