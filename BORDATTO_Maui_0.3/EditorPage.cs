@@ -56,8 +56,9 @@ public sealed class EditorPage : ContentPage
     {
         var left = new HorizontalStackLayout { Spacing = 10, VerticalOptions = LayoutOptions.Center };
         left.Add(LabelText("▰", 18, BordattoColors.Gold));
-        left.Add(LabelText("Dê um nome ao seu bordado", 13, BordattoColors.Cream));
+        left.Add(LabelText(_design.Name, 13, BordattoColors.Cream, FontAttributes.Bold));
         var name = new Button { Text = "Nomear", TextColor = BordattoColors.Gold, BackgroundColor = Colors.Transparent, FontAttributes = FontAttributes.Bold, FontSize = 12 };
+        name.Clicked += async (_, _) => await DisplayAlertAsync("Nome do bordado", $"Nome atual: {_design.Name}", "OK");
         var g = new Grid { Padding = new Thickness(22, 12), BackgroundColor = BordattoColors.Panel, ColumnDefinitions = { new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Auto) } };
         g.Add(left); g.Add(name); g.SetColumn(name, 1);
         return g;
@@ -103,15 +104,41 @@ public sealed class EditorPage : ContentPage
     private View BuildBottomNav()
     {
         var g = new Grid { Padding = new Thickness(10, 8, 10, 10), BackgroundColor = Color.FromArgb("#160D09"), ColumnDefinitions = { new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Star) } };
-        var items = new[] { ("+", "Adicionar"), ("☷", "Ajustes"), ("◇", "Camadas"), ("●", "Linhas") };
-        for (var i = 0; i < items.Length; i++)
+        AddEditorAction(g, 0, "+", "Adicionar", async () =>
         {
-            var stack = new VerticalStackLayout { Spacing = 1, HorizontalOptions = LayoutOptions.Center };
-            stack.Add(LabelText(items[i].Item1, 24, BordattoColors.Cream, FontAttributes.Bold, TextAlignment.Center));
-            stack.Add(LabelText(items[i].Item2, 10, BordattoColors.Muted, FontAttributes.None, TextAlignment.Center));
-            g.Add(stack); g.SetColumn(stack, i);
-        }
+            var action = await DisplayActionSheetAsync("Adicionar", "Cancelar", null, "Novo texto", "Imagem", "Traço");
+            if (action == "Novo texto") await Navigation.PushAsync(new MainPage());
+            else if (action == "Imagem") await DisplayAlertAsync("Imagem", "O digitalizador por imagem será conectado ao mesmo motor MAUI/Skia nesta base.", "OK");
+            else if (action == "Traço") await DisplayAlertAsync("Traço", "A ferramenta de traço manual será portada para este editor sem sair do fluxo Tradicional.", "OK");
+        });
+        AddEditorAction(g, 1, "☷", "Ajustes", async () =>
+        {
+            await DisplayAlertAsync("Ajustes", $"Tamanho: {_design.WidthMm:0.0} × {_design.HeightMm:0.0} mm\nEscala: {_canvas.DesignScale:0.00}×\nRotação: {_canvas.RotationDegrees:0.0}°\n\nArraste a matriz; use ↻ para girar e a alça diagonal para redimensionar.", "OK");
+        });
+        AddEditorAction(g, 2, "◇", "Camadas", async () =>
+        {
+            await DisplayAlertAsync("Camadas", $"1 camada visível\n{_design.Name} • {_design.StitchCount:N0} pontos", "OK");
+        });
+        AddEditorAction(g, 3, "●", "Linhas", async () =>
+        {
+            await DisplayAlertAsync("Linhas", $"{_design.ThreadName}\n{_design.ThreadBrand} {_design.ThreadCode}\n1 fio / 1 cor", "OK");
+        });
         return g;
+    }
+
+    private static void AddEditorAction(Grid grid, int col, string icon, string title, Func<Task> action)
+    {
+        var button = new Button
+        {
+            Text = $"{icon}\n{title}",
+            FontSize = 10,
+            HeightRequest = 58,
+            BackgroundColor = Colors.Transparent,
+            TextColor = BordattoColors.Cream,
+            Padding = new Thickness(2)
+        };
+        button.Clicked += async (_, _) => await action();
+        grid.Add(button); grid.SetColumn(button, col);
     }
 
     private static void Add(Grid grid, View view, int row) { grid.Add(view); grid.SetRow(view, row); }
