@@ -39,7 +39,7 @@ jobs:
       - name: Restore MAUI project
         working-directory: BORDATTO_Maui_0.3
         run: dotnet restore BORDATTO.Maui.csproj
-      - name: Build BORDATTO 0.3.5 MAUI debug APK
+      - name: Build BORDATTO 0.3.6 MAUI debug APK
         working-directory: BORDATTO_Maui_0.3
         run: dotnet build BORDATTO.Maui.csproj -f net10.0-android -c Debug --no-restore -p:AndroidPackageFormats=apk
       - name: Locate APK
@@ -80,12 +80,12 @@ jobs:
       - name: Verify and rename APK
         run: |
           APK="${{ steps.apk.outputs.path }}"
-          cp "$APK" BORDATTO_0.3.5_Satin_Adaptativo_Contraformas_Teste.apk
-          sha256sum BORDATTO_0.3.5_Satin_Adaptativo_Contraformas_Teste.apk > BORDATTO_0.3.5_Satin_Adaptativo_Contraformas_Teste.apk.sha256
+          cp "$APK" BORDATTO_0.3.6_Editor_Bastidor_Referencia_Teste.apk
+          sha256sum BORDATTO_0.3.6_Editor_Bastidor_Referencia_Teste.apk > BORDATTO_0.3.6_Editor_Bastidor_Referencia_Teste.apk.sha256
       - uses: actions/upload-artifact@v4
         with:
-          name: BORDATTO-0.3.5-Satin-Adaptativo-Contraformas-APK
+          name: BORDATTO-0.3.6-Editor-Bastidor-Referencia-APK
           path: |
-            BORDATTO_0.3.5_Satin_Adaptativo_Contraformas_Teste.apk
-            BORDATTO_0.3.5_Satin_Adaptativo_Contraformas_Teste.apk.sha256
+            BORDATTO_0.3.6_Editor_Bastidor_Referencia_Teste.apk
+            BORDATTO_0.3.6_Editor_Bastidor_Referencia_Teste.apk.sha256
           retention-days: 30
