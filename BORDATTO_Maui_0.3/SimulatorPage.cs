@@ -42,10 +42,10 @@ public sealed class SimulatorPage : ContentPage
         _timer.Tick += (_, _) => Tick();
 
         var root = new Grid { RowDefinitions = { new RowDefinition(GridLength.Auto), new RowDefinition(GridLength.Star), new RowDefinition(GridLength.Auto) } };
-        var header = BuildHeader(); root.Add(header); Grid.SetRow(header, 0);
-        var canvasArea = BuildCanvasArea(); root.Add(canvasArea); Grid.SetRow(canvasArea, 1);
-        var controls = BuildControls(); root.Add(controls); Grid.SetRow(controls, 2);
-        _completedOverlay = BuildCompletedOverlay(); root.Add(_completedOverlay); Grid.SetRowSpan(_completedOverlay, 3); _completedOverlay.IsVisible = false;
+        var header = BuildHeader(); root.Add(header); root.SetRow(header, 0);
+        var canvasArea = BuildCanvasArea(); root.Add(canvasArea); root.SetRow(canvasArea, 1);
+        var controls = BuildControls(); root.Add(controls); root.SetRow(controls, 2);
+        _completedOverlay = BuildCompletedOverlay(); root.Add(_completedOverlay); root.SetRowSpan(_completedOverlay, 3); _completedOverlay.IsVisible = false;
         Content = root;
         SetSpeed(1);
         UpdateUi();
@@ -59,7 +59,7 @@ public sealed class SimulatorPage : ContentPage
         var speed = new HorizontalStackLayout { Spacing = 2, Padding = new Thickness(4), BackgroundColor = Color.FromArgb("#1B1924") };
         foreach (var b in _speedButtons) speed.Add(b);
         var grid = new Grid { Padding = new Thickness(10, 10), ColumnDefinitions = { new ColumnDefinition(GridLength.Auto), new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Auto) } };
-        grid.Add(back); grid.Add(title); grid.Add(speed); Grid.SetColumn(title, 1); Grid.SetColumn(speed, 2);
+        grid.Add(back); grid.Add(title); grid.Add(speed); grid.SetColumn(title, 1); grid.SetColumn(speed, 2);
         return grid;
     }
 
@@ -83,11 +83,11 @@ public sealed class SimulatorPage : ContentPage
         info.Add(Text($"{_design.ThreadName} · {_design.ThreadBrand} {_design.ThreadCode}", 12, Colors.White, FontAttributes.Bold));
         info.Add(_progress);
         var fio = new Border { BackgroundColor = Color.FromArgb("#25222E"), Padding = new Thickness(12, 8), Content = Text("Fio 1 / 1", 10, Color.FromArgb("#BBB6C2")) };
-        threadCard.Add(swatch); threadCard.Add(info); threadCard.Add(fio); Grid.SetColumn(info, 1); Grid.SetColumn(fio, 2);
+        threadCard.Add(swatch); threadCard.Add(info); threadCard.Add(fio); threadCard.SetColumn(info, 1); threadCard.SetColumn(fio, 2);
         panel.Add(threadCard);
 
         var stats = new Grid { ColumnDefinitions = { new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Star) } };
-        stats.Add(_points); stats.Add(_remaining); Grid.SetColumn(_remaining, 1); _remaining.HorizontalTextAlignment = TextAlignment.End;
+        stats.Add(_points); stats.Add(_remaining); stats.SetColumn(_remaining, 1); _remaining.HorizontalTextAlignment = TextAlignment.End;
         panel.Add(stats);
 
         var code = new Border { HorizontalOptions = LayoutOptions.Start, Stroke = ThreadColor(), StrokeThickness = 1, BackgroundColor = Color.FromArgb("#1B1924"), Padding = new Thickness(12, 6), Content = Text($"●  {_design.ThreadCode}  ▶", 10, Colors.White, FontAttributes.Bold) };
@@ -99,7 +99,7 @@ public sealed class SimulatorPage : ContentPage
         minus.Clicked += (_, _) => { Pause(); _current = Math.Max(0, _current - Math.Max(1, _design.Stitches.Count / 10)); UpdateUi(); };
         var stop = new Button { Text = "■\nParar", HeightRequest = 60, CornerRadius = 16, BackgroundColor = Color.FromArgb("#25222E"), TextColor = ThreadColor(), FontSize = 12 };
         stop.Clicked += (_, _) => { Pause(); _current = 0; UpdateUi(); };
-        buttons.Add(minus); buttons.Add(_play); buttons.Add(stop); Grid.SetColumn(_play, 1); Grid.SetColumn(stop, 2);
+        buttons.Add(minus); buttons.Add(_play); buttons.Add(stop); buttons.SetColumn(_play, 1); buttons.SetColumn(stop, 2);
         panel.Add(buttons);
         return panel;
     }
@@ -122,7 +122,7 @@ public sealed class SimulatorPage : ContentPage
         close.Clicked += (_, _) => _completedOverlay.IsVisible = false;
         var restart = new Button { Text = "↻ Reiniciar", HeightRequest = 54, CornerRadius = 16, BackgroundColor = ThreadColor(), TextColor = Colors.White, FontAttributes = FontAttributes.Bold };
         restart.Clicked += (_, _) => { _completedOverlay.IsVisible = false; _current = 0; UpdateUi(); };
-        row.Add(close); row.Add(restart); Grid.SetColumn(restart, 1); card.Add(row); overlay.Add(card); return overlay;
+        row.Add(close); row.Add(restart); row.SetColumn(restart, 1); card.Add(row); overlay.Add(card); return overlay;
     }
 
     private void TogglePlay()
@@ -136,7 +136,6 @@ public sealed class SimulatorPage : ContentPage
     private void Tick()
     {
         if (!_playing) return;
-        // The reference sample shows ~1,888 points in about 4m21s at 1× (~434 ppm).
         const double referencePpm = 434.0;
         _accumulator += referencePpm / 60.0 * 0.080 * _speed;
         var add = (int)Math.Floor(_accumulator);
