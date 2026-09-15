@@ -18,14 +18,8 @@ public static class EmbroideryEngine
         var textPx = heightMm * pxPerMm;
         var style = model.Bold && model.Italic ? SKFontStyle.BoldItalic : model.Bold ? SKFontStyle.Bold : model.Italic ? SKFontStyle.Italic : SKFontStyle.Normal;
         using var typeface = SKTypeface.FromFamilyName(model.FontFamily, style) ?? SKTypeface.Default;
-        using var paint = new SKPaint
-        {
-            Color = SKColors.White,
-            IsAntialias = true,
-            Typeface = typeface,
-            TextSize = textPx,
-            Style = SKPaintStyle.Fill
-        };
+        using var font = new SKFont(typeface, textPx);
+        using var paint = new SKPaint { Color = SKColors.White, IsAntialias = true, Style = SKPaintStyle.Fill };
 
         var densityPx = Math.Max(2, (int)MathF.Round(Math.Clamp(settings.DensityMm, .25f, 1.2f) * pxPerMm));
         var pullPx = Math.Clamp(settings.PullCompensationMm, 0f, 1.5f) * pxPerMm;
@@ -51,8 +45,7 @@ public static class EmbroideryEngine
             }
 
             var token = ch.ToString();
-            var bounds = new SKRect();
-            var advance = Math.Max(paint.MeasureText(token, ref bounds), textPx * .20f);
+            var advance = Math.Max(font.MeasureText(token, out var bounds, paint), textPx * .20f);
             var margin = Math.Max(8, (int)MathF.Ceiling(pxPerMm * 2.5f));
             var bitmapW = Math.Clamp((int)MathF.Ceiling(bounds.Width) + margin * 2, 32, 1600);
             var bitmapH = Math.Clamp((int)MathF.Ceiling(bounds.Height) + margin * 2, 32, 1600);
@@ -61,7 +54,7 @@ public static class EmbroideryEngine
             using (var canvas = new SKCanvas(bitmap))
             {
                 canvas.Clear(SKColors.Transparent);
-                canvas.DrawText(token, margin - bounds.Left, margin - bounds.Top, paint);
+                canvas.DrawText(token, margin - bounds.Left, margin - bounds.Top, SKTextAlign.Left, font, paint);
                 canvas.Flush();
             }
 
@@ -104,8 +97,6 @@ public static class EmbroideryEngine
                             return;
                         }
 
-                        // The reference behavior is local: underlay for this object,
-                        // immediately followed by the satin return over the same object.
                         if (settings.CenterUnderlay)
                         {
                             var stride = Math.Max(1, (int)MathF.Round(1.8f / Math.Max(settings.DensityMm, .25f)));
@@ -188,35 +179,24 @@ public static class EmbroideryEngine
             throw new InvalidOperationException("Não foi possível gerar pontadas suficientes para este nome.");
 
         var stitchOnly = raw.Where(p => p.Command is StitchCommand.Stitch or StitchCommand.Jump).ToList();
-        var minX = stitchOnly.Min(p => p.X);
-        var maxX = stitchOnly.Max(p => p.X);
-        var minY = stitchOnly.Min(p => p.Y);
-        var maxY = stitchOnly.Max(p => p.Y);
-        var centerX = (minX + maxX) * .5f;
-        var centerY = (minY + maxY) * .5f;
+        var minX = stitchOnly.Min(p => p.X); var maxX = stitchOnly.Max(p => p.X);
+        var minY = stitchOnly.Min(p => p.Y); var maxY = stitchOnly.Max(p => p.Y);
+        var centerX = (minX + maxX) * .5f; var centerY = (minY + maxY) * .5f;
         var radians = model.RotationDegrees * MathF.PI / 180f;
-        var cos = MathF.Cos(radians);
-        var sin = MathF.Sin(radians);
+        var cos = MathF.Cos(radians); var sin = MathF.Sin(radians);
 
         var rotated = new List<StitchPoint>(raw.Count + 1);
         foreach (var p in raw)
         {
-            var dx = p.X - centerX;
-            var dy = p.Y - centerY;
-            rotated.Add(p with
-            {
-                X = centerX + dx * cos - dy * sin,
-                Y = centerY + dx * sin + dy * cos
-            });
+            var dx = p.X - centerX; var dy = p.Y - centerY;
+            rotated.Add(p with { X = centerX + dx * cos - dy * sin, Y = centerY + dx * sin + dy * cos });
         }
         var last = rotated.Last(p => p.Command == StitchCommand.Stitch);
         rotated.Add(new StitchPoint(last.X, last.Y, StitchCommand.End, model.Color));
 
         var finalPts = rotated.Where(p => p.Command is StitchCommand.Stitch or StitchCommand.Jump).ToList();
-        var fMinX = finalPts.Min(p => p.X);
-        var fMaxX = finalPts.Max(p => p.X);
-        var fMinY = finalPts.Min(p => p.Y);
-        var fMaxY = finalPts.Max(p => p.Y);
+        var fMinX = finalPts.Min(p => p.X); var fMaxX = finalPts.Max(p => p.X);
+        var fMinY = finalPts.Min(p => p.Y); var fMaxY = finalPts.Max(p => p.Y);
 
         return new EmbroideryDesign
         {
