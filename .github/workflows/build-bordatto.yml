@@ -56,20 +56,24 @@ jobs:
         with:
           api-level: 35
           arch: x86_64
-          profile: pixel_6
+          profile: pixel_2
+          ram-size: 1536M
+          heap-size: 384M
+          disk-size: 2048M
           disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -no-metrics
           script: |
             adb logcat -c
             adb install -r "${{ steps.apk.outputs.path }}"
             adb shell monkey -p com.bordatto.app -c android.intent.category.LAUNCHER 1
-            sleep 8
+            sleep 10
             echo "--- process ---"
             adb shell pidof com.bordatto.app || true
             echo "--- crash log ---"
             adb logcat -d -b crash -v threadtime || true
             if ! adb shell pidof com.bordatto.app >/dev/null; then
               echo "BORDATTO crashed during startup"
-              adb logcat -d -v threadtime | tail -500
+              adb logcat -d -v threadtime | tail -700
               exit 1
             fi
       - name: Verify and rename APK
