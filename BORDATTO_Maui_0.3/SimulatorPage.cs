@@ -20,7 +20,7 @@ public sealed class SimulatorPage : ContentPage
     private double _speed = 1;
     private double _accumulator;
     private bool _playing;
-    private const double ReferencePpm = 640.0;
+    private const double ReferencePpm = 900.0;
 
     public SimulatorPage(EmbroideryDesign design)
     {
