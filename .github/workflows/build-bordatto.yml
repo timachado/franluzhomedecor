@@ -7,7 +7,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     env:
       ANDROID_HOME: /usr/local/lib/android/sdk
       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
@@ -17,6 +17,9 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
       - name: Prepare Android SDK 36
         run: |
           SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
@@ -28,27 +31,30 @@ jobs:
           if [ ! -x "$ANDROID_HOME/build-tools/36.0.0/apksigner" ]; then
             yes | "$SDKMANAGER" "build-tools;36.0.0"
           fi
-          test -d "$ANDROID_HOME/platforms/android-36"
-          test -x "$ANDROID_HOME/build-tools/36.0.0/apksigner"
-      - uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '9.6.0'
-      - name: Apply BORDATTO 0.2.38 stroke-aware Traditional motor patch
-        run: python3 .github/scripts/patch_bordatto_069.py
-      - name: Build debug APK
-        working-directory: BORDATTO_Foundation_0.1
-        run: gradle --no-daemon clean assembleDebug --stacktrace
+      - name: Install .NET MAUI Android workload
+        run: |
+          dotnet --info
+          dotnet workload install maui-android
+          dotnet workload list
+      - name: Restore MAUI project
+        working-directory: BORDATTO_Maui_0.3
+        run: dotnet restore BORDATTO.Maui.csproj
+      - name: Build BORDATTO 0.3.0 MAUI debug APK
+        working-directory: BORDATTO_Maui_0.3
+        run: dotnet build BORDATTO.Maui.csproj -f net10.0-android -c Debug --no-restore -p:AndroidPackageFormats=apk
       - name: Verify and rename APK
         run: |
-          APK="BORDATTO_Foundation_0.1/app/build/outputs/apk/debug/app-debug.apk"
+          APK=$(find BORDATTO_Maui_0.3/bin/Debug/net10.0-android -type f -name '*-Signed.apk' | head -1)
+          if [ -z "$APK" ]; then APK=$(find BORDATTO_Maui_0.3/bin/Debug/net10.0-android -type f -name '*.apk' | head -1); fi
+          test -n "$APK"
           test -f "$APK"
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$APK"
-          cp "$APK" BORDATTO_0.2.38_Motor_Tradicional_Traço_Satin_Teste.apk
-          sha256sum BORDATTO_0.2.38_Motor_Tradicional_Traço_Satin_Teste.apk > BORDATTO_0.2.38_Motor_Tradicional_Traço_Satin_Teste.apk.sha256
+          cp "$APK" BORDATTO_0.3.0_MAUI_Skia_Engine_Teste.apk
+          sha256sum BORDATTO_0.3.0_MAUI_Skia_Engine_Teste.apk > BORDATTO_0.3.0_MAUI_Skia_Engine_Teste.apk.sha256
       - uses: actions/upload-artifact@v4
         with:
-          name: BORDATTO-0.2.38-Motor-Tradicional-Traco-Satin-APK
+          name: BORDATTO-0.3.0-MAUI-Skia-Shared-Engine-APK
           path: |
-            BORDATTO_0.2.38_Motor_Tradicional_Traço_Satin_Teste.apk
-            BORDATTO_0.2.38_Motor_Tradicional_Traço_Satin_Teste.apk.sha256
+            BORDATTO_0.3.0_MAUI_Skia_Engine_Teste.apk
+            BORDATTO_0.3.0_MAUI_Skia_Engine_Teste.apk.sha256
           retention-days: 30
