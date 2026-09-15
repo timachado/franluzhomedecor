@@ -7,7 +7,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 55
     env:
       ANDROID_HOME: /usr/local/lib/android/sdk
       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
@@ -39,16 +39,42 @@ jobs:
       - name: Restore MAUI project
         working-directory: BORDATTO_Maui_0.3
         run: dotnet restore BORDATTO.Maui.csproj
-      - name: Build BORDATTO 0.3.0 MAUI debug APK
+      - name: Build BORDATTO MAUI debug APK
         working-directory: BORDATTO_Maui_0.3
         run: dotnet build BORDATTO.Maui.csproj -f net10.0-android -c Debug --no-restore -p:AndroidPackageFormats=apk
-      - name: Verify and rename APK
+      - name: Locate APK
+        id: apk
         run: |
           APK=$(find BORDATTO_Maui_0.3/bin/Debug/net10.0-android -type f -name '*-Signed.apk' | head -1)
           if [ -z "$APK" ]; then APK=$(find BORDATTO_Maui_0.3/bin/Debug/net10.0-android -type f -name '*.apk' | head -1); fi
           test -n "$APK"
           test -f "$APK"
+          echo "path=$APK" >> "$GITHUB_OUTPUT"
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$APK"
+      - name: Android runtime smoke test
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          script: |
+            adb logcat -c
+            adb install -r "${{ steps.apk.outputs.path }}"
+            adb shell monkey -p com.bordatto.app -c android.intent.category.LAUNCHER 1
+            sleep 8
+            echo "--- process ---"
+            adb shell pidof com.bordatto.app || true
+            echo "--- crash log ---"
+            adb logcat -d -b crash -v threadtime || true
+            if ! adb shell pidof com.bordatto.app >/dev/null; then
+              echo "BORDATTO crashed during startup"
+              adb logcat -d -v threadtime | tail -500
+              exit 1
+            fi
+      - name: Verify and rename APK
+        run: |
+          APK="${{ steps.apk.outputs.path }}"
           cp "$APK" BORDATTO_0.3.0_MAUI_Skia_Engine_Teste.apk
           sha256sum BORDATTO_0.3.0_MAUI_Skia_Engine_Teste.apk > BORDATTO_0.3.0_MAUI_Skia_Engine_Teste.apk.sha256
       - uses: actions/upload-artifact@v4
