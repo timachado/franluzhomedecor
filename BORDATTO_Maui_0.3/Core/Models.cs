@@ -24,7 +24,7 @@ public sealed class TextObjectModel
 {
     public string Text { get; set; } = "Maria";
     public string FontFamily { get; set; } = "sans-serif";
-    public float HeightMm { get; set; } = 19f;
+    public float HeightMm { get; set; } = 18.2f;
     public float CenterX { get; set; } = 0.50f;
     public float CenterY { get; set; } = 0.48f;
     public float Scale { get; set; } = 1f;
@@ -36,7 +36,9 @@ public sealed class TextObjectModel
 
 public sealed class EngineSettings
 {
-    public float DensityMm { get; set; } = 0.18f;
+    // Distância longitudinal entre pares de Satin. Cada amostra cria duas penetrações,
+    // uma em cada lado do traço, como em uma coluna Satin real.
+    public float DensityMm { get; set; } = 0.20f;
     public float PullCompensationMm { get; set; } = 0.25f;
     public float SatinMaxWidthMm { get; set; } = 9f;
     public bool CenterUnderlay { get; set; } = true;
@@ -45,7 +47,7 @@ public sealed class EngineSettings
 
     public static EngineSettings TraditionalPreset() => new()
     {
-        DensityMm = 0.18f,
+        DensityMm = 0.20f,
         PullCompensationMm = 0.25f,
         SatinMaxWidthMm = 9f,
         CenterUnderlay = true,
@@ -55,7 +57,7 @@ public sealed class EngineSettings
 
     public static EngineSettings StudioPreset() => new()
     {
-        DensityMm = 0.18f,
+        DensityMm = 0.20f,
         PullCompensationMm = 0.30f,
         SatinMaxWidthMm = 10f,
         CenterUnderlay = true,
