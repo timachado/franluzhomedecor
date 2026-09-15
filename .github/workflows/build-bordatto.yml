@@ -39,7 +39,7 @@ jobs:
       - name: Restore MAUI project
         working-directory: BORDATTO_Maui_0.3
         run: dotnet restore BORDATTO.Maui.csproj
-      - name: Build BORDATTO MAUI debug APK
+      - name: Build BORDATTO 0.3.1 MAUI debug APK
         working-directory: BORDATTO_Maui_0.3
         run: dotnet build BORDATTO.Maui.csproj -f net10.0-android -c Debug --no-restore -p:AndroidPackageFormats=apk
       - name: Locate APK
@@ -51,40 +51,52 @@ jobs:
           test -f "$APK"
           echo "path=$APK" >> "$GITHUB_OUTPUT"
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$APK"
+      - name: Free disk for Android runtime test
+        run: |
+          echo "Disk before cleanup"
+          df -h /
+          rm -rf BORDATTO_Maui_0.3/obj || true
+          rm -rf "$HOME/.nuget/packages" || true
+          sudo rm -rf /usr/share/dotnet/packs || true
+          sudo rm -rf /opt/hostedtoolcache/CodeQL || true
+          echo "Disk after cleanup"
+          df -h /
       - name: Android runtime smoke test
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 35
+          api-level: 29
           arch: x86_64
           profile: pixel_2
           ram-size: 1536M
           heap-size: 384M
           disk-size: 2048M
           disable-animations: true
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -no-metrics
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -no-metrics -partition-size 2048
           script: |
             adb logcat -c
             adb install -r "${{ steps.apk.outputs.path }}"
             adb shell monkey -p com.bordatto.app -c android.intent.category.LAUNCHER 1
-            sleep 10
-            echo "--- process ---"
+            sleep 12
+            echo "--- BORDATTO process ---"
             adb shell pidof com.bordatto.app || true
-            echo "--- crash log ---"
+            echo "--- BORDATTO diagnostics ---"
+            adb logcat -d -v threadtime | grep -E "BORDATTO|AndroidRuntime|FATAL EXCEPTION|monodroid|DOTNET" | tail -300 || true
+            echo "--- crash buffer ---"
             adb logcat -d -b crash -v threadtime || true
             if ! adb shell pidof com.bordatto.app >/dev/null; then
               echo "BORDATTO crashed during startup"
-              adb logcat -d -v threadtime | tail -700
+              adb logcat -d -v threadtime | tail -900
               exit 1
             fi
       - name: Verify and rename APK
         run: |
           APK="${{ steps.apk.outputs.path }}"
-          cp "$APK" BORDATTO_0.3.0_MAUI_Skia_Engine_Teste.apk
-          sha256sum BORDATTO_0.3.0_MAUI_Skia_Engine_Teste.apk > BORDATTO_0.3.0_MAUI_Skia_Engine_Teste.apk.sha256
+          cp "$APK" BORDATTO_0.3.1_MAUI_Skia_Startup_Fix_Teste.apk
+          sha256sum BORDATTO_0.3.1_MAUI_Skia_Startup_Fix_Teste.apk > BORDATTO_0.3.1_MAUI_Skia_Startup_Fix_Teste.apk.sha256
       - uses: actions/upload-artifact@v4
         with:
-          name: BORDATTO-0.3.0-MAUI-Skia-Shared-Engine-APK
+          name: BORDATTO-0.3.1-MAUI-Skia-Startup-Fix-APK
           path: |
-            BORDATTO_0.3.0_MAUI_Skia_Engine_Teste.apk
-            BORDATTO_0.3.0_MAUI_Skia_Engine_Teste.apk.sha256
+            BORDATTO_0.3.1_MAUI_Skia_Startup_Fix_Teste.apk
+            BORDATTO_0.3.1_MAUI_Skia_Startup_Fix_Teste.apk.sha256
           retention-days: 30
