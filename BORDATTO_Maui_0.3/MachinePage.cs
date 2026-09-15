@@ -1,4 +1,5 @@
 using BordattoStudio.Core;
+using Microsoft.Maui.Storage;
 
 namespace BordattoStudio;
 
