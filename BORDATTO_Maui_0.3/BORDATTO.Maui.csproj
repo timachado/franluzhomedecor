@@ -10,8 +10,8 @@
     <MauiVersion>10.0.101</MauiVersion>
     <ApplicationTitle>BORDATTO Studio</ApplicationTitle>
     <ApplicationId>com.bordatto.app</ApplicationId>
-    <ApplicationDisplayVersion>0.3.1</ApplicationDisplayVersion>
-    <ApplicationVersion>42</ApplicationVersion>
+    <ApplicationDisplayVersion>0.3.2</ApplicationDisplayVersion>
+    <ApplicationVersion>43</ApplicationVersion>
     <SupportedOSPlatformVersion>23.0</SupportedOSPlatformVersion>
     <AndroidPackageFormats>apk</AndroidPackageFormats>
     <AndroidUseAapt2>true</AndroidUseAapt2>
