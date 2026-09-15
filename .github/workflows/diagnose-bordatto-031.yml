@@ -25,3 +25,4 @@ jobs:
           grep -n -B3 -A3 'visibleUntil' "$SRC" | head -180 || true
           echo '=== Analyzer declaration ==='
           grep -n -A170 'private fun DesignAnalyzerPanel' "$SRC" | head -190 || true
+# runner probe 2026-09-15
