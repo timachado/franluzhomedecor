@@ -1,4 +1,5 @@
 using BordattoStudio.Core;
+using Microsoft.Maui.Storage;
 
 namespace BordattoStudio;
 
@@ -31,6 +32,12 @@ public sealed class HomePage : ContentPage
         ShowTab(0);
     }
 
+    protected override void OnAppearing()
+    {
+        base.OnAppearing();
+        if (_activeTab == 2) _body.Content = BuildProjects();
+    }
+
     private View BuildHeader()
     {
         var title = new VerticalStackLayout { Spacing = 1 };
@@ -42,7 +49,7 @@ public sealed class HomePage : ContentPage
             StrokeThickness = 1,
             BackgroundColor = BordattoColors.Panel,
             Padding = new Thickness(12, 8),
-            Content = Label("MAUI • SKIA", 10, BordattoColors.Gold, FontAttributes.Bold)
+            Content = Label("0.3.3 • MAUI/SKIA", 9, BordattoColors.Gold, FontAttributes.Bold)
         };
         var g = new Grid
         {
@@ -85,15 +92,7 @@ public sealed class HomePage : ContentPage
                 Padding = new Thickness(2)
             };
             var idx = i;
-            b.Clicked += async (_, _) =>
-            {
-                if (idx == 1)
-                {
-                    await Navigation.PushAsync(new MainPage());
-                    return;
-                }
-                ShowTab(idx);
-            };
+            b.Clicked += (_, _) => ShowTab(idx);
             _navButtons[i] = b;
             nav.Add(b); nav.SetColumn(b, i);
         }
@@ -105,13 +104,13 @@ public sealed class HomePage : ContentPage
         _activeTab = index;
         for (var i = 0; i < _navButtons.Length; i++)
         {
-            if (_navButtons[i] is null) continue;
             _navButtons[i].TextColor = i == index ? BordattoColors.Gold : BordattoColors.Muted;
             _navButtons[i].BackgroundColor = i == index ? Color.FromArgb("#2A160F") : Colors.Transparent;
         }
 
         _body.Content = index switch
         {
+            1 => BuildCreate(),
             2 => BuildProjects(),
             3 => BuildLibrary(),
             4 => BuildProfile(),
@@ -131,9 +130,9 @@ public sealed class HomePage : ContentPage
         };
         var heroStack = new VerticalStackLayout { Spacing = 10 };
         heroStack.Add(Label("Criar novo bordado", 22, BordattoColors.Cream, FontAttributes.Bold));
-        heroStack.Add(Label("Tradicional para um fluxo simples ou Studio Pro com controles técnicos. Ambos usam o mesmo núcleo de pontadas.", 12, BordattoColors.Muted));
+        heroStack.Add(Label("Tradicional para um fluxo simples ou Studio Pro com controles técnicos. Os dois usam o mesmo motor Satin por eixo do traço.", 12, BordattoColors.Muted));
         var create = Primary("✦  NOVO BORDADO");
-        create.Clicked += async (_, _) => await Navigation.PushAsync(new MainPage());
+        create.Clicked += async (_, _) => await Navigation.PushAsync(new MainPage(BordattoMode.Tradicional));
         heroStack.Add(create);
         hero.Content = heroStack;
         stack.Add(hero);
@@ -145,56 +144,89 @@ public sealed class HomePage : ContentPage
             ColumnDefinitions = { new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Star) },
             RowDefinitions = { new RowDefinition(GridLength.Auto), new RowDefinition(GridLength.Auto), new RowDefinition(GridLength.Auto) }
         };
-        AddTool(tools, 0, 0, "Aa", "Lettering", "Criar nomes e textos", async () => await Navigation.PushAsync(new MainPage()));
-        AddTool(tools, 1, 0, "▶", "Simulação", "Sequência real das pontadas", async () => await DisplayAlertAsync("Simulação", "Gere ou abra uma matriz e toque em ▶ para simular.", "OK"));
-        AddTool(tools, 0, 1, "✓", "Machine Check", "Validação antes da máquina", async () => await DisplayAlertAsync("Machine Check", "O Machine Check continua no roteiro de portabilidade para a base MAUI. O motor de geração e simulação já está ativo nesta versão.", "OK"));
-        AddTool(tools, 1, 1, "≋", "Analyzer", "Diagnóstico da matriz", async () => await DisplayAlertAsync("Analyzer", "O Analyzer será conectado ao mesmo design gerado pelo novo motor.", "OK"));
-        AddTool(tools, 0, 2, "⇩", "Exportar", "PES • JEF • DST", async () => await DisplayAlertAsync("Exportação", "A exportação multi-formato está sendo portada para a base MAUI sem alterar o novo motor.", "OK"));
-        AddTool(tools, 1, 2, "$", "Custos", "Linha, tempo e produção", async () => await DisplayAlertAsync("Calculadora", "A calculadora profissional será reativada no menu completo.", "OK"));
+        AddTool(tools, 0, 0, "Aa", "Lettering", "Tradicional", async () => await Navigation.PushAsync(new MainPage(BordattoMode.Tradicional)));
+        AddTool(tools, 1, 0, "✦", "Studio Pro", "Mesmo motor + controles", async () => await Navigation.PushAsync(new MainPage(BordattoMode.StudioPro)));
+        AddTool(tools, 0, 1, "⚙", "Máquina", "Perfil, velocidade e bastidor", async () => await Navigation.PushAsync(new MachinePage()));
+        AddTool(tools, 1, 1, "R$", "Custos", "Tempo e produção", async () => await Navigation.PushAsync(new CostPage()));
+        AddTool(tools, 0, 2, "▶", "Simulação", "Abra pelo editor da matriz", async () => await DisplayAlertAsync("Simulação", "Crie uma matriz e toque no botão ▶ do editor para executar a sequência real de pontadas.", "OK"));
+        AddTool(tools, 1, 2, "✓", "Machine Check", "Validação pelo perfil salvo", async () => await ShowMachineCheckInfo());
         stack.Add(tools);
 
-        stack.Add(Label("Motor atual", 15, BordattoColors.Cream, FontAttributes.Bold));
-        var engine = new Border
-        {
-            Stroke = Color.FromArgb("#3D281D"), StrokeThickness = 1,
-            BackgroundColor = Color.FromArgb("#1B110D"), Padding = new Thickness(16, 13),
-            Content = Label("SkiaSharp • Satin orientado ao traço • Underlay local • Tradicional + Studio Pro", 12, BordattoColors.Muted)
-        };
-        stack.Add(engine);
+        stack.Add(Label("Motor 0.3.3", 15, BordattoColors.Cream, FontAttributes.Bold));
+        stack.Add(Card("Satin orientado ao traço", "Skeleton/eixo da letra → underlay local → pares de Satin esquerda/direita → próximo traço. Isso substitui a varredura que aparecia no vídeo anterior."));
+        return new ScrollView { Content = stack };
+    }
 
+    private View BuildCreate()
+    {
+        var stack = PageStack("Criar", "Escolha como começar seu bordado.");
+        stack.Add(ActionCard("Aa", "Lettering Tradicional", "Texto → matriz → editor → simulação", async () => await Navigation.PushAsync(new MainPage(BordattoMode.Tradicional))));
+        stack.Add(ActionCard("✦", "Lettering Studio Pro", "Mesmo motor com densidade, compensação e underlay avançados", async () => await Navigation.PushAsync(new MainPage(BordattoMode.StudioPro))));
+        stack.Add(ActionCard("▧", "Abrir matriz", "Selecionar um arquivo do aparelho", PickMatrixAsync));
+        stack.Add(Card("Imagem / desenho", "O digitalizador visual ainda está em portabilidade para MAUI. Ele permanece visível no fluxo para não desaparecer do aplicativo."));
         return new ScrollView { Content = stack };
     }
 
     private View BuildProjects()
     {
-        var stack = PageStack("Projetos", "Seus bordados ficam organizados aqui.");
+        var stack = PageStack("Projetos", "Matrizes criadas recentemente nesta base.");
         var newProject = Primary("+  NOVO PROJETO");
-        newProject.Clicked += async (_, _) => await Navigation.PushAsync(new MainPage());
+        newProject.Clicked += async (_, _) => await Navigation.PushAsync(new MainPage(BordattoMode.Tradicional));
         stack.Add(newProject);
-        stack.Add(Card("Projetos recentes", "Os projetos criados nesta nova base aparecerão aqui conforme o armazenamento persistente for religado."));
-        stack.Add(Card("Histórico de exportação", "Rastreabilidade por formato, data e máquina."));
+        var recent = ProjectStore.Load();
+        if (recent.Count == 0)
+        {
+            stack.Add(Card("Nenhum projeto salvo ainda", "Gere uma matriz no Tradicional ou Studio Pro e ela aparecerá aqui."));
+        }
+        else
+        {
+            foreach (var p in recent)
+                stack.Add(Card(p.Name, $"{p.Mode} • {p.Stitches:N0} pts • {p.WidthMm:0.0} × {p.HeightMm:0.0} mm\nAtualizado {p.UpdatedAt:dd/MM HH:mm}"));
+        }
         return new ScrollView { Content = stack };
     }
 
     private View BuildLibrary()
     {
-        var stack = PageStack("Biblioteca", "Recursos de bordado e referências técnicas.");
-        stack.Add(Card("Linhas", "Brother • Madeira • cores e códigos"));
-        stack.Add(Card("Bastidores", "Perfis e limites de área útil"));
-        stack.Add(Card("Máquinas", "Perfis para Machine Check e tempo estimado"));
-        stack.Add(Card("Formatos", "DST • PES • JEF e demais formatos do BORDATTO"));
-        stack.Add(Card("Lettering", "Fontes e presets de Satin"));
+        var stack = PageStack("Biblioteca", "Arquivos, linhas, bastidores e referências.");
+        stack.Add(ActionCard("▧", "Abrir arquivo do aparelho", "DST • PES • JEF • VP3 • EXP e outros", PickMatrixAsync));
+        stack.Add(Card("Linhas", "Brother • Madeira • cores e códigos de referência"));
+        stack.Add(Card("Bastidores", "100×100 • 130×180 • 160×260 • 200×300 mm"));
+        stack.Add(Card("Formatos", "A leitura completa dos formatos do motor 0.2.x será reconectada nesta aba; selecionar arquivo já funciona nesta base."));
         return new ScrollView { Content = stack };
     }
 
     private View BuildProfile()
     {
-        var stack = PageStack("Perfil", "BORDATTO Studio");
-        stack.Add(Card("Versão", "0.3.2 • MAUI/Skia engine"));
-        stack.Add(Card("Modo Tradicional", "Fluxo simplificado com motor compartilhado"));
-        stack.Add(Card("Studio Pro", "Densidade, compensação e underlay avançados"));
-        stack.Add(Card("Diagnóstico", "Inicialização protegida e registro de falhas Android"));
+        var stack = PageStack("Perfil", "Configurações do BORDATTO Studio.");
+        stack.Add(Card("Versão", "0.3.3 • .NET MAUI 10 • SkiaSharp 4.152"));
+        stack.Add(ActionCard("⚙", "Configuração da máquina", "Velocidade e bastidor", async () => await Navigation.PushAsync(new MachinePage())));
+        stack.Add(ActionCard("R$", "Calculadora de custos", "Linha, máquina e tempo", async () => await Navigation.PushAsync(new CostPage())));
+        stack.Add(Card("Tradicional + Studio Pro", "Os dois modos compartilham o mesmo digitizador. O Studio Pro apenas expõe parâmetros técnicos adicionais."));
         return new ScrollView { Content = stack };
+    }
+
+    private async Task PickMatrixAsync()
+    {
+        try
+        {
+            var result = await FilePicker.Default.PickAsync(new PickOptions { PickerTitle = "Selecionar matriz de bordado" });
+            if (result is null) return;
+            await DisplayAlertAsync("Arquivo selecionado", $"{result.FileName}\n\nO seletor está ativo. A importação completa de pontos do motor 0.2.x ainda será reconectada ao núcleo MAUI.", "OK");
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlertAsync("BORDATTO", ex.Message, "OK");
+        }
+    }
+
+    private async Task ShowMachineCheckInfo()
+    {
+        var speed = Preferences.Default.Get("machine_speed", 750d);
+        var hoopIndex = Preferences.Default.Get("machine_hoop", 0);
+        var hoops = new[] { "100 × 100 mm", "130 × 180 mm", "160 × 260 mm", "200 × 300 mm" };
+        hoopIndex = Math.Clamp(hoopIndex, 0, hoops.Length - 1);
+        await DisplayAlertAsync("Machine Check", $"Perfil ativo\nVelocidade: {speed:0} pts/min\nBastidor: {hoops[hoopIndex]}\n\nA matriz gerada mostra dimensões e pontos no editor antes da simulação.", "OK");
     }
 
     private static VerticalStackLayout PageStack(string title, string subtitle)
@@ -216,6 +248,15 @@ public sealed class HomePage : ContentPage
             BackgroundColor = BordattoColors.Panel, Padding = new Thickness(16, 14),
             Content = content
         };
+    }
+
+    private static Border ActionCard(string icon, string title, string subtitle, Func<Task> action)
+    {
+        var card = Card($"{icon}   {title}", subtitle);
+        var tap = new TapGestureRecognizer();
+        tap.Tapped += async (_, _) => await action();
+        card.GestureRecognizers.Add(tap);
+        return card;
     }
 
     private static void AddTool(Grid grid, int col, int row, string icon, string title, string subtitle, Func<Task> action)
