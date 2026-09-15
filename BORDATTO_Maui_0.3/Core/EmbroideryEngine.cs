@@ -5,7 +5,7 @@ namespace BordattoStudio.Core;
 public static class EmbroideryEngine
 {
     public static EmbroideryDesign Generate(TextObjectModel model, EngineSettings settings, BordattoMode mode)
-        => TrackSatinDigitizer034.Generate(model, settings, mode);
+        => TrackSatinDigitizer035.Generate(model, settings, mode);
 
     public static EmbroideryDesign Transform(EmbroideryDesign design, float scale, float rotationDegrees)
     {
