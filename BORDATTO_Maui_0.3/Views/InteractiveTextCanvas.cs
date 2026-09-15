@@ -14,7 +14,6 @@ public sealed class InteractiveTextCanvas : SKCanvasView
     private GestureMode _gesture;
     private SKPoint _rotateHandle;
     private SKPoint _resizeHandle;
-    private SKRect _localBox;
     private SKPoint _screenCenter;
     private float _canvasWidth;
     private float _canvasHeight;
@@ -49,25 +48,19 @@ public sealed class InteractiveTextCanvas : SKCanvasView
         var hoop = new SKRect(pad, pad * .75f, w - pad, h - pad * .75f);
         using var hoopPaint = new SKPaint { Color = new SKColor(0x55, 0x51, 0x49), StrokeWidth = 4, Style = SKPaintStyle.Stroke, IsAntialias = true };
         canvas.DrawRoundRect(hoop, 28, 28, hoopPaint);
-        using var caption = new SKPaint { Color = new SKColor(0x76, 0x70, 0x65), TextSize = Math.Max(16, w * .025f), TextAlign = SKTextAlign.Center, IsAntialias = true };
-        canvas.DrawText("Bastidor 100 × 100 mm", w / 2f, hoop.Top + 30f, caption);
+
+        using var captionFont = new SKFont(SKTypeface.Default, Math.Max(16, w * .025f));
+        using var captionPaint = new SKPaint { Color = new SKColor(0x76, 0x70, 0x65), IsAntialias = true };
+        canvas.DrawText("Bastidor 100 × 100 mm", w / 2f, hoop.Top + 30f, SKTextAlign.Center, captionFont, captionPaint);
 
         var pxPerMm = hoop.Width / 100f;
         var textSize = Math.Clamp(Model.HeightMm * pxPerMm * Model.Scale, 22f, hoop.Height * .65f);
         var style = Model.Bold && Model.Italic ? SKFontStyle.BoldItalic : Model.Bold ? SKFontStyle.Bold : Model.Italic ? SKFontStyle.Italic : SKFontStyle.Normal;
         using var typeface = SKTypeface.FromFamilyName(Model.FontFamily, style) ?? SKTypeface.Default;
-        using var textPaint = new SKPaint
-        {
-            Color = EmbroideryEngine.ToSkColor(Model.Color),
-            TextSize = textSize,
-            Typeface = typeface,
-            IsAntialias = true,
-            Style = SKPaintStyle.Fill
-        };
-        var bounds = new SKRect();
-        textPaint.MeasureText(Model.Text, ref bounds);
+        using var textFont = new SKFont(typeface, textSize);
+        using var textPaint = new SKPaint { Color = EmbroideryEngine.ToSkColor(Model.Color), IsAntialias = true, Style = SKPaintStyle.Fill };
+        textFont.MeasureText(Model.Text, out var bounds, textPaint);
         var margin = 14f;
-        _localBox = new SKRect(bounds.Left - margin, bounds.Top - margin, bounds.Right + margin, bounds.Bottom + margin);
         _screenCenter = new SKPoint(
             hoop.Left + Math.Clamp(Model.CenterX, 0f, 1f) * hoop.Width,
             hoop.Top + Math.Clamp(Model.CenterY, 0f, 1f) * hoop.Height);
@@ -75,11 +68,11 @@ public sealed class InteractiveTextCanvas : SKCanvasView
         canvas.Save();
         canvas.Translate(_screenCenter.X, _screenCenter.Y);
         canvas.RotateDegrees(Model.RotationDegrees);
-        canvas.DrawText(Model.Text, -bounds.MidX, -bounds.MidY, textPaint);
+        canvas.DrawText(Model.Text, -bounds.MidX, -bounds.MidY, SKTextAlign.Left, textFont, textPaint);
 
         if (Selected)
         {
-            var box = new SKRect(_localBox.Left - bounds.MidX, _localBox.Top - bounds.MidY, _localBox.Right - bounds.MidX, _localBox.Bottom - bounds.MidY);
+            var box = new SKRect(bounds.Left - bounds.MidX - margin, bounds.Top - bounds.MidY - margin, bounds.Right - bounds.MidX + margin, bounds.Bottom - bounds.MidY + margin);
             using var boxPaint = new SKPaint { Color = new SKColor(0xE5, 0x17, 0x66), StrokeWidth = 3.2f, Style = SKPaintStyle.Stroke, IsAntialias = true };
             canvas.DrawRoundRect(box, 10, 10, boxPaint);
             var rotateLocal = new SKPoint(box.MidX, box.Bottom + 64f);
@@ -93,8 +86,8 @@ public sealed class InteractiveTextCanvas : SKCanvasView
             canvas.DrawLine(resizeLocal.X - 9, resizeLocal.Y + 7, resizeLocal.X + 8, resizeLocal.Y - 10, iconPaint);
             canvas.Restore();
 
-            _rotateHandle = TransformLocal(new SKPoint(rotateLocal.X, rotateLocal.Y), Model.RotationDegrees, _screenCenter);
-            _resizeHandle = TransformLocal(new SKPoint(resizeLocal.X, resizeLocal.Y), Model.RotationDegrees, _screenCenter);
+            _rotateHandle = TransformLocal(rotateLocal, Model.RotationDegrees, _screenCenter);
+            _resizeHandle = TransformLocal(resizeLocal, Model.RotationDegrees, _screenCenter);
         }
         else canvas.Restore();
     }
@@ -107,31 +100,11 @@ public sealed class InteractiveTextCanvas : SKCanvasView
             case SKTouchAction.Pressed:
                 _touches[e.Id] = p;
                 _previousTouches[e.Id] = p;
-                if (_touches.Count >= 2)
-                {
-                    _gesture = GestureMode.Multi;
-                    Selected = true;
-                }
-                else if (Distance(p, _rotateHandle) <= 38f)
-                {
-                    _gesture = GestureMode.Rotate;
-                    Selected = true;
-                }
-                else if (Distance(p, _resizeHandle) <= 38f)
-                {
-                    _gesture = GestureMode.Resize;
-                    Selected = true;
-                }
-                else if (HitTextBox(p))
-                {
-                    _gesture = GestureMode.Drag;
-                    Selected = true;
-                }
-                else
-                {
-                    _gesture = GestureMode.None;
-                    Selected = false;
-                }
+                if (_touches.Count >= 2) { _gesture = GestureMode.Multi; Selected = true; }
+                else if (Distance(p, _rotateHandle) <= 38f) { _gesture = GestureMode.Rotate; Selected = true; }
+                else if (Distance(p, _resizeHandle) <= 38f) { _gesture = GestureMode.Resize; Selected = true; }
+                else if (HitTextBox(p)) { _gesture = GestureMode.Drag; Selected = true; }
+                else { _gesture = GestureMode.None; Selected = false; }
                 InvalidateSurface();
                 break;
 
@@ -141,20 +114,15 @@ public sealed class InteractiveTextCanvas : SKCanvasView
                 if (_gesture == GestureMode.Multi && _touches.Count >= 2)
                 {
                     var ids = _touches.Keys.Take(2).ToArray();
-                    var a0 = _previousTouches[ids[0]];
-                    var b0 = _previousTouches[ids[1]];
-                    var a1 = _touches[ids[0]];
-                    var b1 = _touches[ids[1]];
+                    var a0 = _previousTouches[ids[0]]; var b0 = _previousTouches[ids[1]];
+                    var a1 = _touches[ids[0]]; var b1 = _touches[ids[1]];
                     var oldMid = Mid(a0, b0); var newMid = Mid(a1, b1);
                     var oldVec = new SKPoint(b0.X - a0.X, b0.Y - a0.Y);
                     var newVec = new SKPoint(b1.X - a1.X, b1.Y - a1.Y);
-                    var oldLen = Math.Max(1f, Length(oldVec));
-                    var newLen = Math.Max(1f, Length(newVec));
-                    Model.Scale = Math.Clamp(Model.Scale * newLen / oldLen, .25f, 4f);
+                    Model.Scale = Math.Clamp(Model.Scale * Math.Max(1f, Length(newVec)) / Math.Max(1f, Length(oldVec)), .25f, 4f);
                     Model.RotationDegrees = Normalize(Model.RotationDegrees + Angle(newVec) - Angle(oldVec));
                     MoveCenterBy(newMid.X - oldMid.X, newMid.Y - oldMid.Y);
-                    _previousTouches[ids[0]] = a1;
-                    _previousTouches[ids[1]] = b1;
+                    _previousTouches[ids[0]] = a1; _previousTouches[ids[1]] = b1;
                     RaiseChanged();
                 }
                 else
@@ -172,9 +140,7 @@ public sealed class InteractiveTextCanvas : SKCanvasView
                     }
                     else if (_gesture == GestureMode.Resize)
                     {
-                        var prevD = Math.Max(1f, Distance(prev, _screenCenter));
-                        var nowD = Math.Max(1f, Distance(p, _screenCenter));
-                        Model.Scale = Math.Clamp(Model.Scale * nowD / prevD, .25f, 4f);
+                        Model.Scale = Math.Clamp(Model.Scale * Math.Max(1f, Distance(p, _screenCenter)) / Math.Max(1f, Distance(prev, _screenCenter)), .25f, 4f);
                         RaiseChanged();
                     }
                     _previousTouches[e.Id] = p;
@@ -184,8 +150,7 @@ public sealed class InteractiveTextCanvas : SKCanvasView
 
             case SKTouchAction.Released:
             case SKTouchAction.Cancelled:
-                _touches.Remove(e.Id);
-                _previousTouches.Remove(e.Id);
+                _touches.Remove(e.Id); _previousTouches.Remove(e.Id);
                 _gesture = _touches.Count >= 2 ? GestureMode.Multi : GestureMode.None;
                 InvalidateSurface();
                 break;
@@ -199,8 +164,9 @@ public sealed class InteractiveTextCanvas : SKCanvasView
         var style = Model.Bold && Model.Italic ? SKFontStyle.BoldItalic : Model.Bold ? SKFontStyle.Bold : Model.Italic ? SKFontStyle.Italic : SKFontStyle.Normal;
         using var typeface = SKTypeface.FromFamilyName(Model.FontFamily, style) ?? SKTypeface.Default;
         var pxPerMm = Math.Max(1f, (_canvasWidth - Math.Max(80f, _canvasWidth * .15f)) / 100f);
-        using var paint = new SKPaint { Typeface = typeface, TextSize = Math.Clamp(Model.HeightMm * pxPerMm * Model.Scale, 22f, _canvasHeight * .65f) };
-        var bounds = new SKRect(); paint.MeasureText(Model.Text, ref bounds);
+        using var font = new SKFont(typeface, Math.Clamp(Model.HeightMm * pxPerMm * Model.Scale, 22f, _canvasHeight * .65f));
+        using var paint = new SKPaint { IsAntialias = true };
+        font.MeasureText(Model.Text, out var bounds, paint);
         var box = new SKRect(bounds.Left - bounds.MidX - 20, bounds.Top - bounds.MidY - 20, bounds.Right - bounds.MidX + 20, bounds.Bottom - bounds.MidY + 20);
         return box.Contains(local.X - _screenCenter.X, local.Y - _screenCenter.Y);
     }
@@ -218,13 +184,11 @@ public sealed class InteractiveTextCanvas : SKCanvasView
     private static SKPoint Mid(SKPoint a, SKPoint b) => new((a.X + b.X) * .5f, (a.Y + b.Y) * .5f);
     private static float Angle(SKPoint v) => MathF.Atan2(v.Y, v.X) * 180f / MathF.PI;
     private static float Normalize(float d) { while (d > 180) d -= 360; while (d < -180) d += 360; return d; }
-
     private static SKPoint TransformLocal(SKPoint local, float degrees, SKPoint center)
     {
         var r = degrees * MathF.PI / 180f; var c = MathF.Cos(r); var s = MathF.Sin(r);
         return new SKPoint(center.X + local.X * c - local.Y * s, center.Y + local.X * s + local.Y * c);
     }
-
     private static SKPoint InverseTransform(SKPoint world, float degrees, SKPoint center)
     {
         var dx = world.X - center.X; var dy = world.Y - center.Y;
