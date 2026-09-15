@@ -10,11 +10,17 @@
     <MauiVersion>10.0.101</MauiVersion>
     <ApplicationTitle>BORDATTO Studio</ApplicationTitle>
     <ApplicationId>com.bordatto.app</ApplicationId>
-    <ApplicationDisplayVersion>0.3.0</ApplicationDisplayVersion>
-    <ApplicationVersion>41</ApplicationVersion>
+    <ApplicationDisplayVersion>0.3.1</ApplicationDisplayVersion>
+    <ApplicationVersion>42</ApplicationVersion>
     <SupportedOSPlatformVersion>23.0</SupportedOSPlatformVersion>
     <AndroidPackageFormats>apk</AndroidPackageFormats>
     <AndroidUseAapt2>true</AndroidUseAapt2>
+    <AndroidUseSharedRuntime>false</AndroidUseSharedRuntime>
+    <EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
+    <AndroidLinkMode>None</AndroidLinkMode>
+    <PublishTrimmed>false</PublishTrimmed>
+    <RunAOTCompilation>false</RunAOTCompilation>
+    <AndroidEnableMarshalMethods>false</AndroidEnableMarshalMethods>
   </PropertyGroup>
 
   <ItemGroup>
