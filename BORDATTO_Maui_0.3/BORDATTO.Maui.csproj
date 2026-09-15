@@ -11,7 +11,7 @@
     <ApplicationTitle>BORDATTO Studio</ApplicationTitle>
     <ApplicationId>com.bordatto.app</ApplicationId>
     <ApplicationDisplayVersion>0.3.6</ApplicationDisplayVersion>
-    <ApplicationVersion>47</ApplicationVersion>
+    <ApplicationVersion>48</ApplicationVersion>
     <SupportedOSPlatformVersion>23.0</SupportedOSPlatformVersion>
     <AndroidPackageFormats>apk</AndroidPackageFormats>
     <AndroidUseAapt2>true</AndroidUseAapt2>
