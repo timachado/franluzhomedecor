@@ -1,89 +1,66 @@
 name: Build Biblia EBD Live Lens Native DEX
+
 on:
   push:
     branches: [temp-biblia-ebd-live-lens-native]
   workflow_dispatch:
+
 jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - name: Compile Live Lens DEX
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK 36
+        run: yes | sdkmanager "platforms;android-36" "build-tools;36.0.0" || true
+
+      - name: Compile Live Lens bridge
         shell: bash
         run: |
-          set +e
+          set -euo pipefail
           ROOT="$RUNNER_TEMP/live-lens"
-          mkdir -p "$ROOT/src/com/timachado/bibliaebd" "$ROOT/classes" "$ROOT/dex"
-          {
-            echo "JAVA"
-            java -version
-            javac -version
-            echo "ANDROID_HOME=$ANDROID_HOME"
-            ANDROID_JAR="$(find "$ANDROID_HOME/platforms" -maxdepth 2 -name android.jar | sort -V | tail -1)"
-            D8="$(find "$ANDROID_HOME/build-tools" -maxdepth 2 -type f -name d8 | sort -V | tail -1)"
-            echo "ANDROID_JAR=$ANDROID_JAR"
-            echo "D8=$D8"
-            cat > "$ROOT/src/com/timachado/bibliaebd/AuthActivity.java" <<'JAVA'
+          mkdir -p "$ROOT/classes" "$ROOT/dex" "$ROOT/stub/com/timachado/bibliaebd"
+          cat > "$ROOT/stub/com/timachado/bibliaebd/AuthActivity.java" <<'JAVA'
           package com.timachado.bibliaebd;
           import android.app.Activity;
           public class AuthActivity extends Activity {}
           JAVA
-            cat > "$ROOT/src/com/timachado/bibliaebd/LensActivity.java" <<'JAVA'
-          package com.timachado.bibliaebd;
-          import android.Manifest;
-          import android.content.ContentValues;
-          import android.content.Intent;
-          import android.content.pm.PackageManager;
-          import android.net.Uri;
-          import android.os.Bundle;
-          import android.provider.MediaStore;
-          import android.webkit.PermissionRequest;
-          import android.webkit.ValueCallback;
-          import android.webkit.WebChromeClient;
-          import android.webkit.WebView;
-          import java.lang.reflect.Field;
-          import java.util.Arrays;
-          public class LensActivity extends AuthActivity {
-            private static final int FILE_CHOOSER_REQUEST=4192;
-            private static final int CAMERA_PERMISSION_REQUEST=5192;
-            private WebView appWebView;
-            private ValueCallback<Uri[]> pendingCameraCallback;
-            private Uri pendingCameraUri;
-            private PermissionRequest pendingWebPermission;
-            @Override protected void onCreate(Bundle b){super.onCreate(b);appWebView=findWebView();if(appWebView!=null)appWebView.setWebChromeClient(new LensChromeClient());}
-            private WebView findWebView(){try{Class<?> c=getClass();while(c!=null){try{Field f=c.getDeclaredField("webView");f.setAccessible(true);Object v=f.get(this);if(v instanceof WebView)return(WebView)v;}catch(NoSuchFieldException ignored){}c=c.getSuperclass();}}catch(Throwable ignored){}try{Class<?> c=getClass().getSuperclass();while(c!=null){try{Field f=c.getDeclaredField("appWebView");f.setAccessible(true);Object v=f.get(this);if(v instanceof WebView)return(WebView)v;}catch(NoSuchFieldException ignored){}c=c.getSuperclass();}}catch(Throwable ignored){}return null;}
-            private final class LensChromeClient extends WebChromeClient {
-              @Override public boolean onShowFileChooser(WebView w,ValueCallback<Uri[]> cb,FileChooserParams p){if(pendingCameraCallback!=null)pendingCameraCallback.onReceiveValue(null);pendingCameraCallback=cb;try{if(p!=null&&p.isCaptureEnabled())return openCamera();return openGallery(p);}catch(Throwable e){pendingCameraCallback=null;cb.onReceiveValue(null);return false;}}
-              @Override public void onPermissionRequest(PermissionRequest r){if(r==null)return;runOnUiThread(()->{boolean cam=Arrays.asList(r.getResources()).contains(PermissionRequest.RESOURCE_VIDEO_CAPTURE);if(!cam){r.deny();return;}if(android.os.Build.VERSION.SDK_INT<23||checkSelfPermission(Manifest.permission.CAMERA)==PackageManager.PERMISSION_GRANTED){r.grant(new String[]{PermissionRequest.RESOURCE_VIDEO_CAPTURE});return;}pendingWebPermission=r;requestPermissions(new String[]{Manifest.permission.CAMERA},CAMERA_PERMISSION_REQUEST);});}
-              @Override public void onPermissionRequestCanceled(PermissionRequest r){if(pendingWebPermission==r)pendingWebPermission=null;super.onPermissionRequestCanceled(r);}
-            }
-            private boolean openCamera(){try{ContentValues v=new ContentValues();v.put(MediaStore.Images.Media.DISPLAY_NAME,"athos-camera.jpg");v.put(MediaStore.Images.Media.MIME_TYPE,"image/jpeg");Uri u=getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,v);if(u==null)return false;pendingCameraUri=u;Intent i=new Intent(MediaStore.ACTION_IMAGE_CAPTURE);i.putExtra(MediaStore.EXTRA_OUTPUT,u);i.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION|Intent.FLAG_GRANT_READ_URI_PERMISSION);startActivityForResult(i,FILE_CHOOSER_REQUEST);return true;}catch(Throwable ignored){return false;}}
-            private boolean openGallery(WebChromeClient.FileChooserParams p){try{Intent i;try{i=p!=null?p.createIntent():new Intent(Intent.ACTION_OPEN_DOCUMENT);}catch(Throwable ignored){i=new Intent(Intent.ACTION_OPEN_DOCUMENT);}i.setAction(Intent.ACTION_OPEN_DOCUMENT);i.addCategory(Intent.CATEGORY_OPENABLE);i.setType("image/*");startActivityForResult(i,FILE_CHOOSER_REQUEST);return true;}catch(Throwable ignored){return false;}}
-            @Override protected void onActivityResult(int rq,int rc,Intent d){if(rq==FILE_CHOOSER_REQUEST&&pendingCameraCallback!=null){Uri[] out=null;if(rc==RESULT_OK){try{Uri p=d!=null?d.getData():null;if(p!=null)out=new Uri[]{p};else if(pendingCameraUri!=null)out=new Uri[]{pendingCameraUri};}catch(Throwable ignored){}}ValueCallback<Uri[]> cb=pendingCameraCallback;pendingCameraCallback=null;pendingCameraUri=null;cb.onReceiveValue(out);return;}super.onActivityResult(rq,rc,d);}
-            @Override public void onRequestPermissionsResult(int rq,String[] p,int[] g){super.onRequestPermissionsResult(rq,p,g);if(rq==CAMERA_PERMISSION_REQUEST){PermissionRequest r=pendingWebPermission;pendingWebPermission=null;if(r!=null){boolean ok=g!=null&&g.length>0&&g[0]==PackageManager.PERMISSION_GRANTED;if(ok)r.grant(new String[]{PermissionRequest.RESOURCE_VIDEO_CAPTURE});else r.deny();}}}
-            @Override protected void onDestroy(){if(pendingCameraCallback!=null){pendingCameraCallback.onReceiveValue(null);pendingCameraCallback=null;}if(pendingWebPermission!=null){try{pendingWebPermission.deny();}catch(Throwable ignored){}pendingWebPermission=null;}super.onDestroy();}
-          }
-          JAVA
-            javac -source 8 -target 8 -encoding UTF-8 -cp "$ANDROID_JAR" -d "$ROOT/classes" "$ROOT/src/com/timachado/bibliaebd/AuthActivity.java" "$ROOT/src/com/timachado/bibliaebd/LensActivity.java"
-            JAVAC=$?
-            echo "javac_exit=$JAVAC"
-            if [ "$JAVAC" -eq 0 ]; then
-              mapfile -t CLASSES < <(find "$ROOT/classes/com/timachado/bibliaebd" -maxdepth 1 -type f -name 'LensActivity*.class' -print)
-              echo "classes=${#CLASSES[@]}"
-              "$D8" --min-api 24 --lib "$ANDROID_JAR" --classpath "$ROOT/classes" --output "$ROOT/dex" "${CLASSES[@]}"
-              echo "d8_exit=$?"
-              if [ -s "$ROOT/dex/classes.dex" ]; then cp "$ROOT/dex/classes.dex" "$ROOT/Biblia-EBD-LiveLens-classes5.dex"; fi
-            fi
-            ls -lah "$ROOT" "$ROOT/dex"
-          } 2>&1 | tee "$ROOT/build-diagnostic.txt"
-          exit 0
-      - name: Publish Live Lens build
-        if: always()
-        uses: actions/upload-artifact@v4
+
+          ANDROID_JAR="$ANDROID_HOME/platforms/android-36/android.jar"
+          D8="$ANDROID_HOME/build-tools/36.0.0/d8"
+
+          javac -source 8 -target 8 -encoding UTF-8 \
+            -cp "$ANDROID_JAR" \
+            -d "$ROOT/classes" \
+            "$ROOT/stub/com/timachado/bibliaebd/AuthActivity.java" \
+            tmp-biblia-live-lens/src/com/timachado/bibliaebd/LensActivity.java
+
+          mapfile -t CLASSES < <(find "$ROOT/classes/com/timachado/bibliaebd" -maxdepth 1 -type f -name 'LensActivity*.class' -print)
+          test "${#CLASSES[@]}" -gt 0
+
+          "$D8" --min-api 24 \
+            --lib "$ANDROID_JAR" \
+            --classpath "$ROOT/classes" \
+            --output "$ROOT/dex" \
+            "${CLASSES[@]}"
+
+          test -s "$ROOT/dex/classes.dex"
+          cp "$ROOT/dex/classes.dex" "$ROOT/Biblia-EBD-LiveLens-classes5.dex"
+          sha256sum "$ROOT/Biblia-EBD-LiveLens-classes5.dex" | tee "$ROOT/SHA256SUMS.txt"
+          ls -lh "$ROOT/Biblia-EBD-LiveLens-classes5.dex"
+
+      - uses: actions/upload-artifact@v4
         with:
-          name: Biblia-EBD-LiveLens-Build
+          name: Biblia-EBD-LiveLens-DEX
           path: |
-            ${{ runner.temp }}/live-lens/build-diagnostic.txt
             ${{ runner.temp }}/live-lens/Biblia-EBD-LiveLens-classes5.dex
-          if-no-files-found: warn
+            ${{ runner.temp }}/live-lens/SHA256SUMS.txt
           retention-days: 2
