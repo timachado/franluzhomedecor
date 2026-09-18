@@ -19,19 +19,38 @@ jobs:
       - name: Install Android SDK
         run: yes | sdkmanager "platforms;android-36" "build-tools;36.0.0" || true
       - name: Compile live Lens bridge
+        id: compile
+        continue-on-error: true
         shell: bash
         run: |
-          set -euxo pipefail
+          set +e
           ROOT="$PWD/tmp-biblia-live-lens"
           mkdir -p "$ROOT/classes" "$ROOT/dex"
-          javac -source 8 -target 8 -encoding UTF-8             -cp "$ANDROID_HOME/platforms/android-36/android.jar"             -d "$ROOT/classes"             "$ROOT/stubs/com/timachado/bibliaebd/AuthActivity.java"             "$ROOT/src/com/timachado/bibliaebd/LensActivity.java"
-          mapfile -t CLASSES < <(find "$ROOT/classes/com/timachado/bibliaebd" -maxdepth 1 -type f -name 'LensActivity*.class' -print)
-          test "${#CLASSES[@]}" -gt 0
-          "$ANDROID_HOME/build-tools/36.0.0/d8"             --min-api 24             --lib "$ANDROID_HOME/platforms/android-36/android.jar"             --classpath "$ROOT/classes"             --output "$ROOT/dex" "${CLASSES[@]}"
-          cp "$ROOT/dex/classes.dex" "$ROOT/Biblia-EBD-LiveLens-classes5.dex"
-          ls -lh "$ROOT/Biblia-EBD-LiveLens-classes5.dex"
-      - uses: actions/upload-artifact@v4
+          {
+            echo "ANDROID_HOME=$ANDROID_HOME"
+            ls -l "$ANDROID_HOME/platforms/android-36/android.jar"
+            ls -l "$ANDROID_HOME/build-tools/36.0.0/d8"
+            javac -source 8 -target 8 -encoding UTF-8 -cp "$ANDROID_HOME/platforms/android-36/android.jar" -d "$ROOT/classes" "$ROOT/stubs/com/timachado/bibliaebd/AuthActivity.java" "$ROOT/src/com/timachado/bibliaebd/LensActivity.java"
+            JAVAC=$?
+            echo "javac_exit=$JAVAC"
+            find "$ROOT/classes" -type f -maxdepth 8 -print
+            if [ "$JAVAC" -eq 0 ]; then
+              mapfile -t CLASSES < <(find "$ROOT/classes/com/timachado/bibliaebd" -maxdepth 1 -type f -name 'LensActivity*.class' -print)
+              echo "class_count=${#CLASSES[@]}"
+              "$ANDROID_HOME/build-tools/36.0.0/d8" --min-api 24 --lib "$ANDROID_HOME/platforms/android-36/android.jar" --classpath "$ROOT/classes" --output "$ROOT/dex" "${CLASSES[@]}"
+              D8=$?
+              echo "d8_exit=$D8"
+              if [ "$D8" -eq 0 ] && [ -s "$ROOT/dex/classes.dex" ]; then cp "$ROOT/dex/classes.dex" "$ROOT/Biblia-EBD-LiveLens-classes5.dex"; fi
+            fi
+          } 2>&1 | tee "$ROOT/build-diagnostic.txt"
+          exit 0
+      - name: Upload diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          name: Biblia-EBD-LiveLens-DEX
-          path: tmp-biblia-live-lens/Biblia-EBD-LiveLens-classes5.dex
+          name: Biblia-EBD-LiveLens-Diagnostic
+          path: |
+            tmp-biblia-live-lens/build-diagnostic.txt
+            tmp-biblia-live-lens/Biblia-EBD-LiveLens-classes5.dex
+          if-no-files-found: warn
           retention-days: 2
