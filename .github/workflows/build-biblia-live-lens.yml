@@ -1,0 +1,35 @@
+name: Build Biblia EBD Live Lens Native DEX
+on:
+  push:
+    branches: [temp-biblia-ebd-live-lens-native]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Install Android SDK
+        run: yes | sdkmanager "platforms;android-36" "build-tools;36.0.0" || true
+      - name: Compile live Lens bridge
+        shell: bash
+        run: |
+          set -euxo pipefail
+          ROOT="$PWD/tmp-biblia-live-lens"
+          mkdir -p "$ROOT/classes" "$ROOT/dex"
+          javac -source 8 -target 8 -encoding UTF-8             -cp "$ANDROID_HOME/platforms/android-36/android.jar"             -d "$ROOT/classes"             "$ROOT/stubs/com/timachado/bibliaebd/AuthActivity.java"             "$ROOT/src/com/timachado/bibliaebd/LensActivity.java"
+          mapfile -t CLASSES < <(find "$ROOT/classes/com/timachado/bibliaebd" -maxdepth 1 -type f -name 'LensActivity*.class' -print)
+          test "${#CLASSES[@]}" -gt 0
+          "$ANDROID_HOME/build-tools/36.0.0/d8"             --min-api 24             --lib "$ANDROID_HOME/platforms/android-36/android.jar"             --classpath "$ROOT/classes"             --output "$ROOT/dex" "${CLASSES[@]}"
+          cp "$ROOT/dex/classes.dex" "$ROOT/Biblia-EBD-LiveLens-classes5.dex"
+          ls -lh "$ROOT/Biblia-EBD-LiveLens-classes5.dex"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Biblia-EBD-LiveLens-DEX
+          path: tmp-biblia-live-lens/Biblia-EBD-LiveLens-classes5.dex
+          retention-days: 2
