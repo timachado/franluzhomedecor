@@ -2,6 +2,8 @@ name: Build Biblia EBD Live Lens Native DEX
 on:
   push:
     branches: [temp-biblia-ebd-live-lens-native]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 jobs:
   build:
