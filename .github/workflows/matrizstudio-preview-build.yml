@@ -39,7 +39,7 @@ jobs:
       - name: Decode Matriz Studio source
         run: |
           mkdir -p MatrizStudioBuild/src
-          base64 -d MatrizStudioBuild/project.tar.gz.b64 | tar -xzf - -C MatrizStudioBuild/src
+          cat MatrizStudioBuild/chunks/*.b64 | base64 -d | tar -xzf - -C MatrizStudioBuild/src
 
       - name: Restore
         working-directory: MatrizStudioBuild/src
