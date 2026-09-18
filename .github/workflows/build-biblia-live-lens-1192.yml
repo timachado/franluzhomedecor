@@ -23,23 +23,58 @@ jobs:
           java-version: '17'
       - uses: android-actions/setup-android@v3
       - name: Install Android SDK 36
-        run: yes | sdkmanager "platforms;android-36" "build-tools;36.0.0" || true
-      - name: Compile live Lens bridge
         shell: bash
         run: |
-          set -euxo pipefail
+          set +e
+          sdkmanager "platforms;android-36" "build-tools;36.0.0" > /tmp/sdk.log 2>&1
+          cat /tmp/sdk.log
+          exit 0
+      - name: Compile live Lens bridge and capture diagnostics
+        shell: bash
+        run: |
+          set +e
           ROOT="$PWD/tmp-biblia-live1192"
           ANDROID_JAR="$ANDROID_HOME/platforms/android-36/android.jar"
           D8="$ANDROID_HOME/build-tools/36.0.0/d8"
           rm -rf "$ROOT/classes" "$ROOT/dex"
           mkdir -p "$ROOT/classes" "$ROOT/dex"
-          javac -source 8 -target 8 -encoding UTF-8             -cp "$ANDROID_JAR"             -d "$ROOT/classes"             "$ROOT/stubs/com/timachado/bibliaebd/LensActivity.java"             "$ROOT/stubs/com/timachado/bibliaebd/LensChromeClient.java"             "$ROOT/src/com/timachado/bibliaebd/LiveActivity.java"             "$ROOT/src/com/timachado/bibliaebd/LiveLensChromeClient.java"
-          "$D8" --min-api 24 --lib "$ANDROID_JAR" --classpath "$ROOT/classes"             --output "$ROOT/dex"             "$ROOT/classes/com/timachado/bibliaebd/LiveActivity.class"             "$ROOT/classes/com/timachado/bibliaebd/LiveLensChromeClient.class"
-          test -s "$ROOT/dex/classes.dex"
-          cp "$ROOT/dex/classes.dex" "$ROOT/Biblia-EBD-1.19.2-LiveLens-classes6.dex"
-          ls -lh "$ROOT/Biblia-EBD-1.19.2-LiveLens-classes6.dex"
+          {
+            echo "ANDROID_HOME=$ANDROID_HOME"
+            echo "ANDROID_JAR=$ANDROID_JAR"
+            echo "D8=$D8"
+            ls -l "$ANDROID_JAR" "$D8" 2>&1
+            java -version
+            javac -version
+            javac -source 8 -target 8 -encoding UTF-8 \
+              -cp "$ANDROID_JAR" \
+              -d "$ROOT/classes" \
+              "$ROOT/stubs/com/timachado/bibliaebd/LensActivity.java" \
+              "$ROOT/stubs/com/timachado/bibliaebd/LensChromeClient.java" \
+              "$ROOT/src/com/timachado/bibliaebd/LiveActivity.java" \
+              "$ROOT/src/com/timachado/bibliaebd/LiveLensChromeClient.java"
+            J=$?
+            echo "javac_status=$J"
+            find "$ROOT/classes" -type f -print 2>&1
+            if [ "$J" -eq 0 ]; then
+              "$D8" --min-api 24 --lib "$ANDROID_JAR" --classpath "$ROOT/classes" \
+                --output "$ROOT/dex" \
+                "$ROOT/classes/com/timachado/bibliaebd/LiveActivity.class" \
+                "$ROOT/classes/com/timachado/bibliaebd/LiveLensChromeClient.class"
+              D=$?
+              echo "d8_status=$D"
+              if [ "$D" -eq 0 ] && [ -s "$ROOT/dex/classes.dex" ]; then
+                cp "$ROOT/dex/classes.dex" "$ROOT/Biblia-EBD-1.19.2-LiveLens-classes6.dex"
+                ls -lh "$ROOT/Biblia-EBD-1.19.2-LiveLens-classes6.dex"
+              fi
+            fi
+          } 2>&1 | tee "$ROOT/build-diagnostics.txt"
+          exit 0
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: Biblia-EBD-1.19.2-LiveLens-DEX
-          path: tmp-biblia-live1192/Biblia-EBD-1.19.2-LiveLens-classes6.dex
+          path: |
+            tmp-biblia-live1192/Biblia-EBD-1.19.2-LiveLens-classes6.dex
+            tmp-biblia-live1192/build-diagnostics.txt
+          if-no-files-found: warn
           retention-days: 2
