@@ -1,7 +1,7 @@
 name: Build Matriz Studio Preview APK
 on:
-  pull_request:
-    branches: [main]
+  push:
+    branches: [matrizstudio-preview-build2]
     paths:
       - 'MatrizStudioBuild/**'
       - '.github/workflows/matrizstudio-preview-build.yml'
