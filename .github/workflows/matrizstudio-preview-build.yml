@@ -1,16 +1,18 @@
-name: Build Matriz Studio Preview APK
+name: Build Matriz Studio 1.0.0 Preview APK
+
 on:
   push:
     branches: [matrizstudio-preview-build2]
     paths:
-      - 'MatrizStudioBuild/**'
+      - 'MatrizStudioBuild/v100/**'
       - '.github/workflows/matrizstudio-preview-build.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  build-matriz-studio:
+  build:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -27,60 +29,46 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      - name: Build and capture diagnostics
+      - name: Build Matriz Studio APK
         shell: bash
         run: |
-          set +e
-          exec > >(tee MatrizStudioBuild/build.log) 2>&1
-          echo "=== ENVIRONMENT ==="
+          set -o pipefail
+          mkdir -p MatrizStudioCI
+          cat MatrizStudioBuild/v100/source_*.b64 | base64 -d | tar -xzf - -C MatrizStudioCI
+
+          mkdir -p MatrizStudioCI/Resources/AppIcon MatrizStudioCI/Resources/Images MatrizStudioCI/Resources/Splash
+          cp MatrizStudioBuild/v100/matrizstudiofg.png MatrizStudioCI/Resources/AppIcon/matrizstudiofg.png
+          cp MatrizStudioBuild/v100/matrizstudiofg.png MatrizStudioCI/Resources/Images/matrizstudio_logo.png
+          cp MatrizStudioBuild/v100/matrizstudiofg.png MatrizStudioCI/Resources/Splash/matrizstudio_splash.png
+
           dotnet --info
-          echo "JAVA:"
           java -version
           echo "ANDROID_HOME=$ANDROID_HOME"
-          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
-
-          echo "=== INSTALL MAUI ANDROID ==="
           dotnet workload install maui-android
-          WORKLOAD_RC=$?
-          echo "WORKLOAD_RC=$WORKLOAD_RC"
 
-          echo "=== DECODE SOURCE ==="
-          mkdir -p MatrizStudioBuild/src
-          cat MatrizStudioBuild/chunks/*.b64 | base64 -d | tar -xzf - -C MatrizStudioBuild/src
-          DECODE_RC=$?
-          echo "DECODE_RC=$DECODE_RC"
-
-          echo "=== RESTORE ==="
-          cd MatrizStudioBuild/src
-          dotnet restore MatrizStudio.csproj
-          RESTORE_RC=$?
-          echo "RESTORE_RC=$RESTORE_RC"
-
-          echo "=== BUILD ==="
-          dotnet publish MatrizStudio.csproj -f net10.0-android -c Debug -p:AndroidPackageFormats=apk
-          BUILD_RC=$?
-          echo "BUILD_RC=$BUILD_RC"
-          cd ../..
-
-          echo "=== COLLECT APK ==="
-          APK=$(find MatrizStudioBuild/src/bin/Debug/net10.0-android -type f -name '*.apk' 2>/dev/null | head -n 1)
-          if [ -n "$APK" ]; then
-            cp "$APK" Matriz_Studio_0.1.1_Preview.apk
-            ls -lh Matriz_Studio_0.1.1_Preview.apk
-          else
-            echo "APK_NOT_FOUND"
+          if command -v sdkmanager >/dev/null 2>&1; then
+            yes | sdkmanager --licenses >/dev/null 2>&1 || true
+            sdkmanager "platforms;android-36" "build-tools;36.0.0" || true
           fi
 
-          echo "WORKLOAD_RC=$WORKLOAD_RC DECODE_RC=$DECODE_RC RESTORE_RC=$RESTORE_RC BUILD_RC=$BUILD_RC" > MatrizStudioBuild/result.txt
-          exit 0
+          dotnet restore MatrizStudioCI/MatrizStudio.csproj
+          dotnet publish MatrizStudioCI/MatrizStudio.csproj             -f net10.0-android36.0             -c Release             -p:AndroidPackageFormats=apk             -p:AndroidKeyStore=false 2>&1 | tee MatrizStudioBuild/build.log
 
-      - name: Upload APK and build log
+          APK=$(find MatrizStudioCI/bin/Release/net10.0-android36.0 -type f -name '*.apk' | head -n 1)
+          test -n "$APK"
+          cp "$APK" Matriz_Studio_1.0.0_Preview.apk
+          sha256sum Matriz_Studio_1.0.0_Preview.apk > Matriz_Studio_1.0.0_Preview.sha256.txt
+          echo "APK=$APK" > MatrizStudioBuild/result.txt
+          ls -lh Matriz_Studio_1.0.0_Preview.apk
+
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Matriz-Studio-0.1.1-Preview-Build
+          name: Matriz-Studio-1.0.0-Preview
           path: |
-            Matriz_Studio_0.1.1_Preview.apk
+            Matriz_Studio_1.0.0_Preview.apk
+            Matriz_Studio_1.0.0_Preview.sha256.txt
             MatrizStudioBuild/build.log
             MatrizStudioBuild/result.txt
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 7
