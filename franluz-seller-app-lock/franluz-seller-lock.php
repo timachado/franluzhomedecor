@@ -2,20 +2,21 @@
 /**
  * Plugin Name: FranLuz Seller App Lock
  * Description: Valida o FranLuz Seller como TWA e mantém o aplicativo restrito ao Seller Center.
- * Version: 1.0.0
+ * Version: 1.1.0
  * Author: T.I. Machado — Soluções em Tecnologia
  */
 
 defined('ABSPATH') || exit;
 
 final class FranLuz_Seller_App_Lock {
-    const VERSION = '1.0.0';
+    const VERSION = '1.1.0';
     const HOME_PACKAGE = 'com.franluz.homedecor';
     const HOME_FINGERPRINT = 'D5:37:A7:2C:E6:8A:15:54:93:BB:3D:94:C9:53:09:66:DF:B0:03:4C:AF:47:C0:8A:64:4F:33:9B:D5:0C:EA:68';
     const SELLER_PACKAGE = 'com.franluz.seller';
-    const SELLER_FINGERPRINT = '4E:6C:FC:79:89:24:53:90:5E:8A:D9:BF:ED:1F:6D:5A:F7:9D:6B:B3:0B:84:25:31:FC:4F:2A:00:D4:AC:F5:44';
+    const SELLER_FINGERPRINT = '79:E2:22:E5:19:B9:40:D1:23:86:D1:08:E8:F2:4E:B6:4A:23:02:78:6A:D4:DC:D8:78:0B:DE:1B:4C:30:9E:60';
 
     public function __construct() {
+        add_action('template_redirect', [$this, 'bootstrap_route'], -100);
         add_action('wp_head', [$this, 'inject_lock'], 0);
         add_action('login_head', [$this, 'inject_lock'], 0);
         add_action('admin_init', [$this, 'ensure_assetlinks']);
@@ -25,6 +26,46 @@ final class FranLuz_Seller_App_Lock {
     public static function activate(): void {
         $self = new self();
         $self->write_assetlinks();
+    }
+
+
+    public function bootstrap_route(): void {
+        if (is_admin()) {
+            return;
+        }
+
+        $uri = isset($_SERVER['REQUEST_URI']) ? wp_unslash($_SERVER['REQUEST_URI']) : '';
+        $path = wp_parse_url($uri, PHP_URL_PATH);
+        if ($path !== '/franluz-seller-app' && $path !== '/franluz-seller-app/') {
+            return;
+        }
+
+        nocache_headers();
+        header('Content-Type: text/html; charset=utf-8');
+
+        $target = is_user_logged_in()
+            ? home_url('/seller-franluz/?seller_app=1&twa=1')
+            : home_url('/minha-conta/?seller_app_auth=1');
+        ?>
+        <!doctype html>
+        <html lang="pt-BR">
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+            <meta name="theme-color" content="#fff8ef">
+            <title>FranLuz Seller</title>
+            <style>html,body{margin:0;min-height:100%;background:#fff8ef}body{display:grid;place-items:center;font-family:system-ui;color:#573225}.f{font-size:52px;font-weight:800}</style>
+        </head>
+        <body>
+            <div class="f">F</div>
+            <script>
+            sessionStorage.setItem('franluzSellerAppModeV1','1');
+            window.location.replace(<?php echo wp_json_encode($target); ?>);
+            </script>
+        </body>
+        </html>
+        <?php
+        exit;
     }
 
     private function assetlinks_path(): string {
