@@ -2,5 +2,5 @@
 <resources>
     <color name="colorPrimary">#573225</color>
     <color name="navigationColor">#FFFAF4</color>
-    <color name="iconBackground">#573225</color>
+    <color name="iconBackground">#FFFFFF</color>
 </resources>
