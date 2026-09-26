@@ -42,7 +42,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: FranLuz-Seller-v1.0.0-Build-Log
+          name: FranLuz-Seller-v1.1.0-Build-Log
           path: seller-build.log
           retention-days: 7
 
@@ -52,14 +52,14 @@ jobs:
           APK=seller/build/outputs/apk/debug/seller-debug.apk
           test -f "$APK"
           $ANDROID_HOME/build-tools/36.0.0/apksigner verify --verbose --print-certs "$APK"
-          cp "$APK" FranLuz_Seller_v1.0.0.apk
+          cp "$APK" FranLuz_Seller_v1.1.0.apk
 
       - name: Upload APK
         if: steps.build.outputs.status == '0'
         uses: actions/upload-artifact@v4
         with:
-          name: FranLuz-Seller-v1.0.0-APK
-          path: FranLuz_Seller_v1.0.0.apk
+          name: FranLuz-Seller-v1.1.0-APK
+          path: FranLuz_Seller_v1.1.0.apk
           retention-days: 30
 
       - name: Fail if build failed
