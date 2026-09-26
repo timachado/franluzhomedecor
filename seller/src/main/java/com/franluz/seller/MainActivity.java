@@ -5,13 +5,13 @@ import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.graphics.Color;
 import android.net.Uri;
+import android.net.http.SslError;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 import android.webkit.CookieManager;
 import android.webkit.SslErrorHandler;
-import android.net.http.SslError;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
@@ -24,46 +24,36 @@ import android.widget.Toast;
 
 public class MainActivity extends Activity {
     private static final int FILE_CHOOSER_REQUEST = 7010;
-    private static final String TRUSTED_HOST = "franluzhomedecor.infinityfree.io";
+    private static final String HOST = "franluzhomedecor.infinityfree.io";
+    private static final String OFFLINE = "file:///android_asset/offline.html";
 
     private WebView webView;
     private ValueCallback<Uri[]> fileCallback;
     private String sellerUrl;
-    private boolean showingOffline = false;
+    private boolean redirectingToSeller = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         sellerUrl = getString(R.string.seller_url);
-        configureSystemBars();
         createWebView();
         registerBackHandling();
         webView.loadUrl(sellerUrl);
     }
 
-    private void configureSystemBars() {
-        getWindow().setStatusBarColor(Color.TRANSPARENT);
-        getWindow().setNavigationBarColor(Color.rgb(255, 248, 239));
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            WindowInsetsController c = getWindow().getInsetsController();
-            if (c != null) {
-                c.setSystemBarsAppearance(
-                    WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS | WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS,
-                    WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS | WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
-                );
-            }
-        }
-    }
-
     private void createWebView() {
         FrameLayout root = new FrameLayout(this);
         root.setBackgroundColor(Color.rgb(255, 248, 239));
+
         webView = new WebView(this);
+        webView.setBackgroundColor(Color.rgb(255, 248, 239));
         root.addView(webView, new FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT,
             FrameLayout.LayoutParams.MATCH_PARENT
         ));
+
         setContentView(root);
+        applySystemBars(root);
 
         root.setOnApplyWindowInsetsListener((v, insets) -> {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -76,16 +66,21 @@ public class MainActivity extends Activity {
         });
         root.requestApplyInsets();
 
-        WebSettings s = webView.getSettings();
-        s.setJavaScriptEnabled(true);
-        s.setDomStorageEnabled(true);
-        s.setDatabaseEnabled(true);
-        s.setAllowContentAccess(true);
-        s.setAllowFileAccess(true);
-        s.setMediaPlaybackRequiresUserGesture(false);
-        s.setCacheMode(WebSettings.LOAD_DEFAULT);
-        s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
-        s.setUserAgentString(s.getUserAgentString() + " FranLuzSeller/1.0.0 AndroidNative");
+        WebSettings settings = webView.getSettings();
+        settings.setJavaScriptEnabled(true);
+        settings.setDomStorageEnabled(true);
+        settings.setDatabaseEnabled(true);
+        settings.setAllowContentAccess(true);
+        settings.setAllowFileAccess(true);
+        settings.setMediaPlaybackRequiresUserGesture(false);
+        settings.setCacheMode(WebSettings.LOAD_DEFAULT);
+        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
+        settings.setSupportZoom(false);
+        settings.setBuiltInZoomControls(false);
+        settings.setDisplayZoomControls(false);
+        settings.setUserAgentString(
+            settings.getUserAgentString() + " FranLuzSellerLocked/2.2.0"
+        );
 
         CookieManager cookies = CookieManager.getInstance();
         cookies.setAcceptCookie(true);
@@ -98,14 +93,20 @@ public class MainActivity extends Activity {
                 ValueCallback<Uri[]> callback,
                 FileChooserParams params
             ) {
-                if (fileCallback != null) fileCallback.onReceiveValue(null);
+                if (fileCallback != null) {
+                    fileCallback.onReceiveValue(null);
+                }
                 fileCallback = callback;
+
                 try {
                     Intent intent = params.createIntent();
                     intent.addCategory(Intent.CATEGORY_OPENABLE);
-                    startActivityForResult(intent, FILE_CHOOSER_REQUEST);
+                    startActivityForResult(
+                        Intent.createChooser(intent, "Selecionar arquivo"),
+                        FILE_CHOOSER_REQUEST
+                    );
                     return true;
-                } catch (ActivityNotFoundException ex) {
+                } catch (ActivityNotFoundException error) {
                     fileCallback = null;
                     Toast.makeText(
                         MainActivity.this,
@@ -120,19 +121,38 @@ public class MainActivity extends Activity {
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                return handleNavigation(request.getUrl());
+                return handleNavigation(request.getUrl(), request.isForMainFrame());
             }
 
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                return handleNavigation(Uri.parse(url));
+                return handleNavigation(Uri.parse(url), true);
             }
 
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
-                showingOffline = url.startsWith("file:///android_asset/offline.html");
                 CookieManager.getInstance().flush();
+
+                if (url.startsWith(OFFLINE)) {
+                    return;
+                }
+
+                Uri uri = Uri.parse(url);
+                if (!isTrusted(uri)) {
+                    return;
+                }
+
+                injectLockedChrome(view);
+
+                String path = safePath(uri);
+                if (isAuthPath(path)) {
+                    detectLoginAndReturnToSeller(view);
+                } else if (!isSellerPath(path)) {
+                    returnToSeller();
+                } else {
+                    redirectingToSeller = false;
+                }
             }
 
             @Override
@@ -142,7 +162,9 @@ public class MainActivity extends Activity {
                 WebResourceError error
             ) {
                 super.onReceivedError(view, request, error);
-                if (request.isForMainFrame()) showOffline();
+                if (request.isForMainFrame()) {
+                    view.loadUrl(OFFLINE);
+                }
             }
 
             @Override
@@ -152,62 +174,150 @@ public class MainActivity extends Activity {
                 SslError error
             ) {
                 handler.cancel();
-                showOffline();
+                view.loadUrl(OFFLINE);
             }
         });
     }
 
-    private boolean handleNavigation(Uri uri) {
+    private void applySystemBars(FrameLayout root) {
+        getWindow().setStatusBarColor(Color.rgb(255, 248, 239));
+        getWindow().setNavigationBarColor(Color.rgb(255, 248, 239));
+
+        root.post(() -> {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                WindowInsetsController controller = root.getWindowInsetsController();
+                if (controller != null) {
+                    controller.setSystemBarsAppearance(
+                        WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+                            | WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS,
+                        WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+                            | WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
+                    );
+                }
+            }
+        });
+    }
+
+    private boolean handleNavigation(Uri uri, boolean mainFrame) {
+        if (!mainFrame) {
+            return false;
+        }
+
         String scheme = uri.getScheme() == null ? "" : uri.getScheme().toLowerCase();
 
         if ("http".equals(scheme) || "https".equals(scheme)) {
-            String host = uri.getHost();
-            if (host != null &&
-                (TRUSTED_HOST.equalsIgnoreCase(host) || host.endsWith(".infinityfree.io"))) {
+            if (!isTrusted(uri)) {
+                returnToSeller();
+                return true;
+            }
+
+            String path = safePath(uri);
+            if (isSellerPath(path) || isAuthPath(path)) {
                 return false;
             }
-            openExternal(uri);
+
+            returnToSeller();
             return true;
         }
 
-        if ("tel".equals(scheme) ||
-            "mailto".equals(scheme) ||
-            "sms".equals(scheme) ||
-            "market".equals(scheme)) {
-            openExternal(uri);
+        if ("mailto".equals(scheme) || "tel".equals(scheme)) {
+            try {
+                startActivity(new Intent(Intent.ACTION_VIEW, uri));
+            } catch (Exception ignored) {
+            }
             return true;
         }
 
-        return false;
+        return true;
     }
 
-    private void openExternal(Uri uri) {
-        try {
-            startActivity(new Intent(Intent.ACTION_VIEW, uri));
-        } catch (Exception ex) {
-            Toast.makeText(
-                this,
-                "Não foi possível abrir este link.",
-                Toast.LENGTH_SHORT
-            ).show();
+    private boolean isTrusted(Uri uri) {
+        String host = uri.getHost();
+        return host != null && HOST.equalsIgnoreCase(host);
+    }
+
+    private String safePath(Uri uri) {
+        String path = uri.getPath();
+        return path == null ? "/" : path;
+    }
+
+    private boolean isSellerPath(String path) {
+        return path.equals("/seller-franluz")
+            || path.startsWith("/seller-franluz/");
+    }
+
+    private boolean isAuthPath(String path) {
+        return path.equals("/minha-conta")
+            || path.startsWith("/minha-conta/")
+            || path.equals("/wp-login.php");
+    }
+
+    private void returnToSeller() {
+        if (redirectingToSeller || webView == null) {
+            return;
         }
+        redirectingToSeller = true;
+        webView.post(() -> webView.loadUrl(sellerUrl));
     }
 
-    private void showOffline() {
-        if (showingOffline) return;
-        showingOffline = true;
-        webView.loadUrl("file:///android_asset/offline.html");
+    private void detectLoginAndReturnToSeller(WebView view) {
+        String js =
+            "(function(){"
+                + "var body=document.body;"
+                + "var logged=!!(body&&body.classList&&body.classList.contains('logged-in'));"
+                + "var logout=!!document.querySelector('a[href*=customer-logout],a[href*=logout]');"
+                + "return logged||logout;"
+                + "})();";
+
+        view.evaluateJavascript(js, result -> {
+            if ("true".equals(result)) {
+                returnToSeller();
+            }
+        });
+    }
+
+    private void injectLockedChrome(WebView view) {
+        String css =
+            "#wpadminbar,#masthead,#colophon,.site-header,.site-footer,"
+                + ".storefront-primary-navigation,.main-navigation,.handheld-navigation,"
+                + ".site-search,.woocommerce-store-notice,.whatsapp-float,.floating-whatsapp,"
+                + ".franluz-bottom-nav,.flc-bottom-nav,.mobile-bottom-nav"
+                + "{display:none!important}"
+                + "html{margin-top:0!important;background:#fff8ef!important}"
+                + "body{margin-top:0!important;background:#fff8ef!important}";
+
+        String js =
+            "(function(){"
+                + "var id='franluzSellerLockedStyle';"
+                + "var s=document.getElementById(id);"
+                + "if(!s){s=document.createElement('style');s.id=id;document.head.appendChild(s);}"
+                + "s.textContent=" + org.json.JSONObject.quote(css) + ";"
+                + "document.querySelectorAll('a[href]').forEach(function(a){"
+                + "try{var u=new URL(a.href,location.href);"
+                + "if(u.origin===location.origin){"
+                + "var p=u.pathname;"
+                + "var ok=(p==='/seller-franluz'||p.indexOf('/seller-franluz/')===0||p==='/minha-conta'||p.indexOf('/minha-conta/')===0||p==='/wp-login.php');"
+                + "if(!ok){a.setAttribute('href'," + org.json.JSONObject.quote(sellerUrl) + ");}"
+                + "}"
+                + "}catch(e){}"
+                + "});"
+                + "})();";
+
+        view.evaluateJavascript(js, null);
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == FILE_CHOOSER_REQUEST) {
-            Uri[] result = WebChromeClient.FileChooserParams.parseResult(resultCode, data);
-            if (fileCallback != null) {
-                fileCallback.onReceiveValue(result);
-                fileCallback = null;
-            }
+
+        if (requestCode != FILE_CHOOSER_REQUEST) {
+            return;
+        }
+
+        Uri[] result = WebChromeClient.FileChooserParams.parseResult(resultCode, data);
+        if (fileCallback != null) {
+            fileCallback.onReceiveValue(result);
+            fileCallback = null;
         }
     }
 
@@ -228,28 +338,49 @@ public class MainActivity extends Activity {
     }
 
     private void handleBack() {
-        if (webView != null && webView.canGoBack()) {
-            webView.goBack();
-        } else {
+        if (webView == null) {
             finish();
+            return;
         }
-    }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        if (webView != null) webView.onResume();
+        String path = safePath(Uri.parse(webView.getUrl() == null ? sellerUrl : webView.getUrl()));
+        if (isAuthPath(path) && webView.canGoBack()) {
+            webView.goBack();
+            return;
+        }
+
+        if (isSellerPath(path)) {
+            finish();
+            return;
+        }
+
+        returnToSeller();
     }
 
     @Override
     protected void onPause() {
-        if (webView != null) webView.onPause();
+        if (webView != null) {
+            webView.onPause();
+        }
         CookieManager.getInstance().flush();
         super.onPause();
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        if (webView != null) {
+            webView.onResume();
+        }
+    }
+
+    @Override
     protected void onDestroy() {
+        if (fileCallback != null) {
+            fileCallback.onReceiveValue(null);
+            fileCallback = null;
+        }
+
         if (webView != null) {
             webView.loadUrl("about:blank");
             webView.stopLoading();
@@ -258,6 +389,7 @@ public class MainActivity extends Activity {
             webView.destroy();
             webView = null;
         }
+
         super.onDestroy();
     }
 }
