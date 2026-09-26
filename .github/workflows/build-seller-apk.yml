@@ -4,8 +4,11 @@ on:
   push:
     branches: [main]
     paths:
-      - 'FranLuz_Seller_v1.0.0_Source.zip'
+      - 'seller/**'
       - '.github/workflows/build-seller-apk.yml'
+      - 'build.gradle'
+      - 'gradle.properties'
+      - 'settings.gradle'
   workflow_dispatch:
 
 jobs:
@@ -14,10 +17,6 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - name: Expand Seller source
-        run: |
-          unzip -q -o FranLuz_Seller_v1.0.0_Source.zip -d .
-          printf "\ninclude ':sellerapp'\n" >> settings.gradle
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -28,16 +27,41 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.13'
+
       - name: Build FranLuz Seller
-        run: gradle --no-daemon :sellerapp:clean :sellerapp:assembleDebug
-      - name: Verify APK
+        id: build
+        shell: bash
         run: |
-          APK=sellerapp/build/outputs/apk/debug/sellerapp-debug.apk
+          set +e
+          gradle --no-daemon :seller:clean :seller:assembleDebug --stacktrace 2>&1 | tee seller-build.log
+          STATUS=${PIPESTATUS[0]}
+          echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: FranLuz-Seller-v1.0.0-Build-Log
+          path: seller-build.log
+          retention-days: 7
+
+      - name: Verify and rename APK
+        if: steps.build.outputs.status == '0'
+        run: |
+          APK=seller/build/outputs/apk/debug/seller-debug.apk
           test -f "$APK"
           $ANDROID_HOME/build-tools/36.0.0/apksigner verify --verbose --print-certs "$APK"
           cp "$APK" FranLuz_Seller_v1.0.0.apk
-      - uses: actions/upload-artifact@v4
+
+      - name: Upload APK
+        if: steps.build.outputs.status == '0'
+        uses: actions/upload-artifact@v4
         with:
           name: FranLuz-Seller-v1.0.0-APK
           path: FranLuz_Seller_v1.0.0.apk
           retention-days: 30
+
+      - name: Fail if build failed
+        if: steps.build.outputs.status != '0'
+        run: exit 1

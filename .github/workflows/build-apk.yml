@@ -2,6 +2,12 @@ name: Build FranLuz APK
 on:
   push:
     branches: [main]
+    paths:
+      - 'app/**'
+      - '.github/workflows/build-apk.yml'
+      - 'build.gradle'
+      - 'gradle.properties'
+      - 'settings.gradle'
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -21,8 +27,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.13'
-      - name: Build APK
-        run: gradle --no-daemon clean assembleDebug
+      - name: Build Home Decor APK
+        run: gradle --no-daemon :app:clean :app:assembleDebug
       - name: Verify and rename
         run: |
           ls -lah app/build/outputs/apk/debug/
