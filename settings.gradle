@@ -6,4 +6,4 @@ dependencyResolutionManagement {
     repositories { google(); mavenCentral() }
 }
 rootProject.name = 'FranLuzHomeDecor'
-include ':app'
+include ':app', ':seller'
