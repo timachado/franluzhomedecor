@@ -29,6 +29,20 @@ final class FranLuz_Seller_App_Lock {
     }
 
 
+    private function seller_user_allowed(): bool {
+        if (!is_user_logged_in()) {
+            return false;
+        }
+
+        $user = wp_get_current_user();
+        $roles = (array) $user->roles;
+        $seller_roles = ['administrator', 'shop_manager', 'seller', 'vendedor', 'vendor'];
+
+        return (bool) array_intersect($seller_roles, $roles)
+            || user_can($user, 'manage_woocommerce')
+            || user_can($user, 'edit_products');
+    }
+
     public function bootstrap_route(): void {
         if (is_admin()) {
             return;
@@ -42,6 +56,31 @@ final class FranLuz_Seller_App_Lock {
 
         nocache_headers();
         header('Content-Type: text/html; charset=utf-8');
+
+        if (is_user_logged_in() && !$this->seller_user_allowed()) {
+            $logout = wp_logout_url(home_url('/franluz-seller-app/'));
+            ?>
+            <!doctype html>
+            <html lang="pt-BR">
+            <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+                <meta name="theme-color" content="#fff8ef">
+                <title>FranLuz Seller</title>
+                <style>html,body{margin:0;min-height:100%;background:#fff8ef}body{display:grid;place-items:center;font-family:system-ui;color:#573225;padding:24px;box-sizing:border-box}.box{max-width:440px;text-align:center;background:#fff;padding:28px;border-radius:22px;box-shadow:0 12px 34px rgba(87,50,37,.1)}h1{font-size:24px}p{color:#756760;line-height:1.5}a{display:block;margin-top:18px;padding:14px 18px;background:#573225;color:#fff;text-decoration:none;border-radius:14px;font-weight:700}</style>
+            </head>
+            <body>
+                <div class="box">
+                    <h1>Acesso exclusivo do vendedor</h1>
+                    <p>Esta conta não possui permissão para o FranLuz Seller. Entre com a conta de vendedor/administrador autorizada.</p>
+                    <a href="<?php echo esc_url($logout); ?>">Sair desta conta</a>
+                </div>
+                <script>sessionStorage.setItem('franluzSellerAppModeV1','1');</script>
+            </body>
+            </html>
+            <?php
+            exit;
+        }
 
         $target = is_user_logged_in()
             ? home_url('/seller-franluz/?seller_app=1&twa=1')
@@ -166,7 +205,9 @@ final class FranLuz_Seller_App_Lock {
         }
 
         $seller_url = home_url('/seller-franluz/?seller_app=1&twa=1');
+        $bootstrap_url = home_url('/franluz-seller-app/');
         $logged_in = is_user_logged_in();
+        $seller_allowed = $this->seller_user_allowed();
         ?>
         <style id="franluz-seller-app-lock-style">
             html.franluz-seller-app-mode #wpadminbar,
@@ -198,7 +239,9 @@ final class FranLuz_Seller_App_Lock {
 
             var KEY = 'franluzSellerAppModeV1';
             var sellerUrl = <?php echo wp_json_encode($seller_url); ?>;
+            var bootstrapUrl = <?php echo wp_json_encode($bootstrap_url); ?>;
             var loggedIn = <?php echo $logged_in ? 'true' : 'false'; ?>;
+            var sellerAllowed = <?php echo $seller_allowed ? 'true' : 'false'; ?>;
             var current = new URL(window.location.href);
 
             if (current.searchParams.get('seller_app') === '1') {
@@ -210,6 +253,11 @@ final class FranLuz_Seller_App_Lock {
             }
 
             document.documentElement.classList.add('franluz-seller-app-mode');
+
+            if (loggedIn && !sellerAllowed) {
+                window.location.replace(bootstrapUrl);
+                return;
+            }
 
             function isSellerPath(path) {
                 return path === '/seller-franluz' || path.indexOf('/seller-franluz/') === 0;
