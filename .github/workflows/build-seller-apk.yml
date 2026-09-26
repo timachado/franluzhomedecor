@@ -1,38 +1,43 @@
 name: Build FranLuz Seller APK
+
 on:
-  workflow_dispatch:
   push:
     branches: [main]
     paths:
-      - 'seller/**'
-      - 'settings.gradle'
+      - 'FranLuz_Seller_v1.0.0_Source.zip'
       - '.github/workflows/build-seller-apk.yml'
+  workflow_dispatch:
 
 jobs:
-  build-seller:
+  build:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+      - name: Expand Seller source
+        run: |
+          unzip -q -o FranLuz_Seller_v1.0.0_Source.zip -d .
+          printf "\ninclude ':sellerapp'\n" >> settings.gradle
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
       - uses: android-actions/setup-android@v3
-      - name: Install SDK 36
+      - name: Install Android SDK 36
         run: yes | sdkmanager "platforms;android-36" "build-tools;36.0.0" || true
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.13'
-      - name: Build Seller APK
-        run: gradle --no-daemon :seller:clean :seller:assembleDebug
-      - name: Verify and rename
+      - name: Build FranLuz Seller
+        run: gradle --no-daemon :sellerapp:clean :sellerapp:assembleDebug
+      - name: Verify APK
         run: |
-          ls -lah seller/build/outputs/apk/debug/
-          $ANDROID_HOME/build-tools/36.0.0/apksigner verify --verbose --print-certs seller/build/outputs/apk/debug/seller-debug.apk
-          cp seller/build/outputs/apk/debug/seller-debug.apk FranLuz_Seller_v1.0.0_debug.apk
+          APK=sellerapp/build/outputs/apk/debug/sellerapp-debug.apk
+          test -f "$APK"
+          $ANDROID_HOME/build-tools/36.0.0/apksigner verify --verbose --print-certs "$APK"
+          cp "$APK" FranLuz_Seller_v1.0.0.apk
       - uses: actions/upload-artifact@v4
         with:
           name: FranLuz-Seller-v1.0.0-APK
-          path: FranLuz_Seller_v1.0.0_debug.apk
+          path: FranLuz_Seller_v1.0.0.apk
           retention-days: 30
